@@ -19,14 +19,21 @@
 
 # Database.
 [database]
-    type  = "mysql"
-    link  = "root:M1y3s2q2l9798448!@tcp(118.178.253.239:3306)/code_platform"
-    debug = true
+    [[database.default]]
+        type  = "mysql"
+        link  = "root:M1y3s2q2l9798448!@tcp(118.178.253.239:3306)/code_platform"
+        Role =  "master"
+        debug = true
+    [[database.casbin]]
+
     # Database logger.
     [database.logger]
         Path   = "/tmp/log/gf-app/sql"
         Level  = "all"
         Stdout = true
+
+#[redis]
+#    default = "118.178.253.239:6379,R1e3d2i2s9798448?"
 
 [gfcli]
     [[gfcli.gen.dao]]
@@ -34,9 +41,9 @@
         link   = "root:M1y3s2q2l9798448!@tcp(118.178.253.239:3306)/code_platform"
         prefix = ""
         tables = ""
-[mail]
-#    邮箱
-    user    =   "13229798448@126.com"
-    pass    =   "11236229798448"
-    host    =   "ssmtp.126.com"
-    port    =   "25"
+#[mail]
+##    邮箱
+#    user    =   "13229798448@126.com"
+#    pass    =   "11236229798448"
+#    host    =   "ssmtp.126.com"
+#    port    =   "25"
