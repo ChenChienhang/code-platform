@@ -1,6 +1,6 @@
 // @Author: 陈健航
 // @Date: 2021/1/4 20:14
-// @Description: casbin的gf orm数据库适配器
+// @Description: casbin的gf orm数据库适配器,不建议修改
 package component
 
 import (
@@ -9,27 +9,21 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
 	"github.com/gogf/gf/database/gdb"
-	"github.com/gogf/gf/frame/g"
 	"runtime"
 	"time"
 )
 
 var Enforcer *casbin.Enforcer
 
-func init() {
+func InitCasbin() {
 	// 创建适配器
-	a, err := NewAdapter(
-		g.Cfg().GetString("database.type"),
-		g.Cfg().GetString("database.link"),
-		"casbin_rule",
-	)
+	a, err := NewAdapter("casbin_rule")
 	if err != nil {
-		fmt.Print(err)
+		panic(err)
 	}
 	// 初始化鉴权器
-	Enforcer, err = casbin.NewEnforcer("../../../config/rbac.conf", a)
-	if err != nil {
-		fmt.Print(err)
+	if Enforcer, err = casbin.NewEnforcer("./config/rbac.conf", a); err != nil {
+		panic(err)
 	}
 }
 
@@ -45,10 +39,8 @@ type CasbinRule struct {
 
 // Adapter represents the gdb adapter for policy storage.
 type Adapter struct {
-	driverName     string
-	dataSourceName string
-	tableName      string
-	db             gdb.DB
+	tableName string
+	db        gdb.DB
 }
 
 // finalizer is the destructor for Adapter.
@@ -59,11 +51,13 @@ func finalizer(a *Adapter) {
 }
 
 // NewAdapter is the constructor for Adapter.
-func NewAdapter(driverName string, dataSourceName string, tableName string) (*Adapter, error) {
+func NewAdapter(tableName string) (*Adapter, error) {
 	a := &Adapter{}
-	a.driverName = driverName
-	a.dataSourceName = dataSourceName
-	a.tableName = tableName
+	if a.tableName == "" {
+		a.tableName = "casbin_rule"
+	} else {
+		a.tableName = tableName
+	}
 
 	// Open the DB, create it if not existed.
 	err := a.open()
@@ -77,38 +71,10 @@ func NewAdapter(driverName string, dataSourceName string, tableName string) (*Ad
 	return a, nil
 }
 
-// NewAdapterFromOptions is the constructor for Adapter with existed connection
-func NewAdapterFromOptions(adapter *Adapter) (*Adapter, error) {
-
-	if adapter.tableName == "" {
-		adapter.tableName = "casbin_rule"
-	}
-	if adapter.db == nil {
-		err := adapter.open()
-		if err != nil {
-			return nil, err
-		}
-
-		runtime.SetFinalizer(adapter, finalizer)
-	}
-	return adapter, nil
-}
-
 func (a *Adapter) open() error {
 	var err error
 	var db gdb.DB
-
-	gdb.SetConfig(gdb.Config{
-		"casbin": gdb.ConfigGroup{
-			gdb.ConfigNode{
-				Type:     a.driverName,
-				LinkInfo: a.dataSourceName,
-				Role:     "master",
-				Weight:   100,
-			},
-		},
-	})
-	db, err = gdb.New("casbin")
+	db, err = gdb.New("default")
 
 	if err != nil {
 		return err
@@ -236,21 +202,21 @@ func (a *Adapter) SavePolicy(model model.Model) error {
 }
 
 // AddPolicy adds a policy rule to the storage.
-func (a *Adapter) AddPolicy(sec string, ptype string, rule []string) error {
+func (a *Adapter) AddPolicy(_, ptype string, rule []string) error {
 	line := savePolicyLine(ptype, rule)
 	_, err := a.db.Table(a.tableName).Data(&line).Insert()
 	return err
 }
 
 // RemovePolicy removes a policy rule from the storage.
-func (a *Adapter) RemovePolicy(sec string, ptype string, rule []string) error {
+func (a *Adapter) RemovePolicy(_ string, ptype string, rule []string) error {
 	line := savePolicyLine(ptype, rule)
 	err := rawDelete(a, line)
 	return err
 }
 
 // RemoveFilteredPolicy removes policy rules that match the filter from the storage.
-func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int, fieldValues ...string) error {
+func (a *Adapter) RemoveFilteredPolicy(_ string, ptype string, fieldIndex int, fieldValues ...string) error {
 	line := CasbinRule{}
 
 	line.PType = ptype
@@ -278,7 +244,6 @@ func (a *Adapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex int,
 
 func rawDelete(a *Adapter, line CasbinRule) error {
 	db := a.db.Table(a.tableName)
-
 	db.Where("ptype = ?", line.PType)
 	if line.V0 != "" {
 		db.Where("v0 = ?", line.V0)
@@ -298,7 +263,6 @@ func rawDelete(a *Adapter, line CasbinRule) error {
 	if line.V5 != "" {
 		db.Where("v5 = ?", line.V5)
 	}
-
 	_, err := db.Delete()
 	return err
 }
