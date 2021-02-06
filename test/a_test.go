@@ -4,18 +4,82 @@
 package test
 
 import (
-	"code-platform/library/common/utils"
+	"code-platform/app/dao"
+	"code-platform/app/service/component"
 	"fmt"
+	"github.com/gogf/gf/os/gfile"
+	"golang.org/x/crypto/bcrypt"
+	"sync"
 	"testing"
 )
 
-type JsonResponse struct {
-	Code    int         `json:"code"`    // 错误码((0:成功, 1:失败, >1:错误码))
-	Message string      `json:"message"` // 提示信息
-	Data    interface{} `json:"data"`    // 返回数据(业务接口定义具体数据结构)
+type Sy struct {
+	sync.Mutex
 }
 
-func Test123(t *testing.T) {
-	err := utils.SendMail("853804445@qq.com", "123", "123")
-	fmt.Print(err)
+func TestMoss(t *testing.T) {
+	fileList, err := gfile.ScanDirFile("C:/temp/solution_directory", "*.c", true)
+	if err != nil {
+		fmt.Print(err)
+	}
+	c, err := component.NewMossClient("c", "604014254")
+	defer func(err error) {
+		err = c.Close()
+		if err != nil {
+			println(err)
+		}
+	}(err)
+	if err != nil {
+		println(err)
+		return
+	}
+	err = c.Run()
+	for _, f := range fileList {
+		err = c.UploadFile(f, false)
+		if err != nil {
+			println(err)
+		}
+	}
+	//fileList, err = gfile.ScanDirFile("C:/temp/base_directory", "*.java", true)
+	//if err != nil {
+	//	println(err)
+	//}
+	//for _, f := range fileList {
+	//	err = c.UploadFile(f, true)
+	//	if err != nil {
+	//		println(err)
+	//	}
+	//}
+	_ = c.SendQuery()
+	url := c.ResultURL
+	fmt.Printf("%T, %v\n", url, url)
+}
+
+func TestMinio(t *testing.T) {
+	component.InitMinioUtil()
+}
+
+func TestPage(t *testing.T) {
+	all, err := dao.SysUser.Page(1, 2).FindAll()
+	if err != nil {
+		println(err)
+	}
+	res, err := dao.SysUser.FindValue(dao.SysUser.Columns.UserId, dao.SysUser.Columns.RealName, 1)
+	for _, v := range all {
+		println(v)
+	}
+
+	fmt.Println(res.IsEmpty())
+}
+
+func TestPassword(t *testing.T) {
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+	if err != nil {
+		println(err)
+	}
+	println(string(hashPassword))
+}
+
+func Test4(t *testing.T) {
+
 }
