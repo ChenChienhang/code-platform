@@ -6,7 +6,7 @@
     "paths": {
         "/user/check_email_unique": {
             "post": {
-                "description": "检查用户邮箱的唯一性。",
+                "description": "获取验证码，发送验证码到邮箱，有效期15min",
                 "consumes": [
                     "application/json"
                 ],
@@ -16,7 +16,7 @@
                 "tags": [
                     "用户相关"
                 ],
-                "summary": "邮箱唯一性检查",
+                "summary": "获取验证码",
                 "parameters": [
                     {
                         "type": "string",

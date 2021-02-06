@@ -21,7 +21,7 @@
 [database]
     [[database.default]]
         type  = "mysql"
-        link  = "root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
+        link  = "root:yourpassword?@tcp(127.0.0.1:3306)/code_platform"
         Role =  "master"
         debug = true
     [[database.casbin]]
@@ -33,22 +33,22 @@
         Stdout = true
 
 [redis]
-    default = "118.178.253.239:6379,Redis13229798448?"
+    default = "127.0.0.1:6379,yourpassword?"
 
 [gfcli]
     [[gfcli.gen.dao]]
-        link   = "mysql:root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
+        link   = "mysql:root:yourpassword?@tcp(127.0.0.1:3306)/code_platform"
         prefix = ""
         jsonCase = "CamelLower"
         tables = "lab_comment,course,course_comment,lab_comment,lab_submit,sys_user"
 [mail]
 #    邮箱
-    user    =   "jankins.chen@foxmail.com"
-    pass    =   "blxuslwkktdvbfbj"
+    user    =   "xxxxxxxxxxxxxxx@foxmail.com"
+    pass    =   "xxxxxxxxxxx"
     host    =   "smtp.qq.com"
     port    =   "465"
 
 [minio]
-    endpoint = "118.178.253.239:9000"
-    accessKeyID = "AKIAIOSFODNN7EXAMPLE"
-    secretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    endpoint = "127.0.0.1:9000"
+    accessKeyID = "xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    secretAccessKey = "xxxxxxxxxxxxxxxxxxxxxxxxx"

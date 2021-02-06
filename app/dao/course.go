@@ -8,17 +8,17 @@ import (
 	"code-platform/app/dao/internal"
 )
 
-// sysRoleDao is the manager for logic model data accessing
+// courseDao is the manager for logic model data accessing
 // and custom defined data operations functions management. You can define
 // methods on it to extend its functionality as you wish.
-type sysRoleDao struct {
-	*internal.SysRoleDao
+type courseDao struct {
+	*internal.CourseDao
 }
 
 var (
-	// SysRole is globally public accessible object for table sys_role operations.
-	SysRole = &sysRoleDao{
-		internal.SysRole,
+	// Course is globally public accessible object for table course operations.
+	Course = &courseDao{
+		internal.Course,
 	}
 )
 

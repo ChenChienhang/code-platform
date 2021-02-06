@@ -8,17 +8,17 @@ import (
 	"code-platform/app/dao/internal"
 )
 
-// sysUserRoleDao is the manager for logic model data accessing
+// courseCommentDao is the manager for logic model data accessing
 // and custom defined data operations functions management. You can define
 // methods on it to extend its functionality as you wish.
-type sysUserRoleDao struct {
-	*internal.SysUserRoleDao
+type courseCommentDao struct {
+	*internal.CourseCommentDao
 }
 
 var (
-	// SysUserRole is globally public accessible object for table sys_user_role operations.
-	SysUserRole = &sysUserRoleDao{
-		internal.SysUserRole,
+	// LabComment is globally public accessible object for table course_comment operations.
+	CourseComment = &courseCommentDao{
+		internal.CourseComment,
 	}
 )
 

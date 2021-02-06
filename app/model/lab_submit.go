@@ -8,7 +8,7 @@ import (
 	"code-platform/app/model/internal"
 )
 
-// SysApi is the golang structure for table sys_api.
-type SysApi internal.SysApi
+// LabSubmit is the golang structure for table lab_submit.
+type LabSubmit internal.LabSubmit
 
 // Fill with you ideas below.

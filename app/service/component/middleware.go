@@ -1,7 +1,7 @@
 // @Author: 陈健航
 // @Date: 2020/11/2 11:37
 // @Description: 前置中间件
-package middleware
+package component
 
 import (
 	"github.com/casbin/casbin/v2"
@@ -10,9 +10,9 @@ import (
 )
 
 // 中间件管理服务
-var Middleware = new(ServiceMiddleware)
+var Middleware = new(serviceMiddleware)
 
-type ServiceMiddleware struct {
+type serviceMiddleware struct {
 	enforcer *casbin.Enforcer
 }
 
@@ -20,7 +20,7 @@ type ServiceMiddleware struct {
 // @receiver s
 // @params r
 // @date 2021-01-04 21:51:50
-func (s *ServiceMiddleware) CORS(r *ghttp.Request) {
+func (s *serviceMiddleware) CORS(r *ghttp.Request) {
 	r.Response.CORSDefault()
 	r.Middleware.Next()
 }
@@ -29,7 +29,7 @@ func (s *ServiceMiddleware) CORS(r *ghttp.Request) {
 // @receiver s
 // @params r
 // @date 2021-01-04 21:52:04
-func (s *ServiceMiddleware) Ctx(r *ghttp.Request) {
+func (s *serviceMiddleware) Ctx(r *ghttp.Request) {
 	token := r.Get("token")
 	if token == "123456" {
 		r.Response.Writeln("auth")

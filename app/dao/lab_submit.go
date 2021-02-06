@@ -8,17 +8,17 @@ import (
 	"code-platform/app/dao/internal"
 )
 
-// sysApiDao is the manager for logic model data accessing
+// labSubmitDao is the manager for logic model data accessing
 // and custom defined data operations functions management. You can define
 // methods on it to extend its functionality as you wish.
-type sysApiDao struct {
-	*internal.SysApiDao
+type labSubmitDao struct {
+	*internal.LabSubmitDao
 }
 
 var (
-	// SysApi is globally public accessible object for table sys_api operations.
-	SysApi = &sysApiDao{
-		internal.SysApi,
+	// LabSubmit is globally public accessible object for table lab_submit operations.
+	LabSubmit = &labSubmitDao{
+		internal.LabSubmit,
 	}
 )
 

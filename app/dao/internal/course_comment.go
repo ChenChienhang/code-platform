@@ -15,50 +15,46 @@ import (
 	"code-platform/app/model"
 )
 
-// SysUserDao is the manager for logic model data accessing
+// CourseCommentDao is the manager for logic model data accessing
 // and custom defined data operations functions management.
-type SysUserDao struct {
+type CourseCommentDao struct {
 	gmvc.M
 	Table   string
-	Columns sysUserColumns
+	Columns courseCommentColumns
 }
 
-// SysUserColumns defines and stores column names for table sys_user.
-type sysUserColumns struct {
-	UserId       string // 主键
-	Email        string // 邮箱
-	Num          string // 学号/职工号
-	NickName     string // 昵称
-	RealName     string // 真实姓名
-	Password     string // 密码
-	Avatar       string // 头像
-	Gender       string // 性别
-	Major        string // 专业
-	Organization string // 单位
-	UpdatedAt    string // 修改时间
-	CreatedAt    string // 创建时间
-	DeletedAt    string // 删除时间
+// CourseCommentColumns defines and stores column names for table course_comment.
+type courseCommentColumns struct {
+	CourseCommentId string // 主键
+	CourseId        string // 实验内容
+	CommentText     string // 评论内容
+	Pid             string // 父评论id，主评时为空
+	UserId          string // 发评论的用户id
+	Username        string // 回复者的用户名
+	ReplyUsername   string // 被回复者的用户名
+	ReplyId         string // 回复的评论id
+	CreatedAt       string // 创建时间
+	UpdatedAt       string // 更新时间
+	DeletedAt       string // 删除时间
 }
 
 var (
-	// SysUser is globally public accessible object for table sys_user operations.
-	SysUser = &SysUserDao{
-		M:     g.DB("default").Model("sys_user").Safe(),
-		Table: "sys_user",
-		Columns: sysUserColumns{
-			UserId:       "user_id",
-			Email:        "email",
-			Num:          "num",
-			NickName:     "nick_name",
-			RealName:     "real_name",
-			Password:     "password",
-			Avatar:       "avatar",
-			Gender:       "gender",
-			Major:        "major",
-			Organization: "organization",
-			UpdatedAt:    "updated_at",
-			CreatedAt:    "created_at",
-			DeletedAt:    "deleted_at",
+	// CourseComment is globally public accessible object for table course_comment operations.
+	CourseComment = &CourseCommentDao{
+		M:     g.DB("default").Model("course_comment").Safe(),
+		Table: "course_comment",
+		Columns: courseCommentColumns{
+			CourseCommentId: "course_comment_id",
+			CourseId:        "course_id",
+			CommentText:     "comment_text",
+			Pid:             "pid",
+			UserId:          "user_id",
+			Username:        "username",
+			ReplyUsername:   "reply_username",
+			ReplyId:         "reply_id",
+			CreatedAt:       "created_at",
+			UpdatedAt:       "updated_at",
+			DeletedAt:       "deleted_at",
 		},
 	}
 )
@@ -67,34 +63,34 @@ var (
 // of current DB object and with given context in it.
 // Note that this returned DB object can be used only once, so do not assign it to
 // a global or package variable for long using.
-func (d *SysUserDao) Ctx(ctx context.Context) *SysUserDao {
-	return &SysUserDao{M: d.M.Ctx(ctx)}
+func (d *CourseCommentDao) Ctx(ctx context.Context) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Ctx(ctx)}
 }
 
 // As sets an alias name for current table.
-func (d *SysUserDao) As(as string) *SysUserDao {
-	return &SysUserDao{M: d.M.As(as)}
+func (d *CourseCommentDao) As(as string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.As(as)}
 }
 
 // TX sets the transaction for current operation.
-func (d *SysUserDao) TX(tx *gdb.TX) *SysUserDao {
-	return &SysUserDao{M: d.M.TX(tx)}
+func (d *CourseCommentDao) TX(tx *gdb.TX) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.TX(tx)}
 }
 
 // Master marks the following operation on master node.
-func (d *SysUserDao) Master() *SysUserDao {
-	return &SysUserDao{M: d.M.Master()}
+func (d *CourseCommentDao) Master() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Master()}
 }
 
 // Slave marks the following operation on slave node.
 // Note that it makes sense only if there's any slave node configured.
-func (d *SysUserDao) Slave() *SysUserDao {
-	return &SysUserDao{M: d.M.Slave()}
+func (d *CourseCommentDao) Slave() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Slave()}
 }
 
 // Args sets custom arguments for model operation.
-func (d *SysUserDao) Args(args ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.Args(args...)}
+func (d *CourseCommentDao) Args(args ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Args(args...)}
 }
 
 // LeftJoin does "LEFT JOIN ... ON ..." statement on the model.
@@ -102,8 +98,8 @@ func (d *SysUserDao) Args(args ...interface{}) *SysUserDao {
 // and also with its alias name, like:
 // Table("user").LeftJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").LeftJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *SysUserDao) LeftJoin(table ...string) *SysUserDao {
-	return &SysUserDao{M: d.M.LeftJoin(table...)}
+func (d *CourseCommentDao) LeftJoin(table ...string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.LeftJoin(table...)}
 }
 
 // RightJoin does "RIGHT JOIN ... ON ..." statement on the model.
@@ -111,8 +107,8 @@ func (d *SysUserDao) LeftJoin(table ...string) *SysUserDao {
 // and also with its alias name, like:
 // Table("user").RightJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").RightJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *SysUserDao) RightJoin(table ...string) *SysUserDao {
-	return &SysUserDao{M: d.M.RightJoin(table...)}
+func (d *CourseCommentDao) RightJoin(table ...string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.RightJoin(table...)}
 }
 
 // InnerJoin does "INNER JOIN ... ON ..." statement on the model.
@@ -120,36 +116,36 @@ func (d *SysUserDao) RightJoin(table ...string) *SysUserDao {
 // and also with its alias name, like:
 // Table("user").InnerJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").InnerJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *SysUserDao) InnerJoin(table ...string) *SysUserDao {
-	return &SysUserDao{M: d.M.InnerJoin(table...)}
+func (d *CourseCommentDao) InnerJoin(table ...string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.InnerJoin(table...)}
 }
 
 // Fields sets the operation fields of the model, multiple fields joined using char ','.
 // The parameter <fieldNamesOrMapStruct> can be type of string/map/*map/struct/*struct.
-func (d *SysUserDao) Fields(fieldNamesOrMapStruct ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.Fields(fieldNamesOrMapStruct...)}
+func (d *CourseCommentDao) Fields(fieldNamesOrMapStruct ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Fields(fieldNamesOrMapStruct...)}
 }
 
 // FieldsEx sets the excluded operation fields of the model, multiple fields joined using char ','.
 // The parameter <fieldNamesOrMapStruct> can be type of string/map/*map/struct/*struct.
-func (d *SysUserDao) FieldsEx(fieldNamesOrMapStruct ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.FieldsEx(fieldNamesOrMapStruct...)}
+func (d *CourseCommentDao) FieldsEx(fieldNamesOrMapStruct ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.FieldsEx(fieldNamesOrMapStruct...)}
 }
 
 // Option sets the extra operation option for the model.
-func (d *SysUserDao) Option(option int) *SysUserDao {
-	return &SysUserDao{M: d.M.Option(option)}
+func (d *CourseCommentDao) Option(option int) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Option(option)}
 }
 
 // OmitEmpty sets OPTION_OMITEMPTY option for the model, which automatically filers
 // the data and where attributes for empty values.
-func (d *SysUserDao) OmitEmpty() *SysUserDao {
-	return &SysUserDao{M: d.M.OmitEmpty()}
+func (d *CourseCommentDao) OmitEmpty() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.OmitEmpty()}
 }
 
 // Filter marks filtering the fields which does not exist in the fields of the operated table.
-func (d *SysUserDao) Filter() *SysUserDao {
-	return &SysUserDao{M: d.M.Filter()}
+func (d *CourseCommentDao) Filter() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Filter()}
 }
 
 // Where sets the condition statement for the model. The parameter <where> can be type of
@@ -163,8 +159,8 @@ func (d *SysUserDao) Filter() *SysUserDao {
 // Where("status IN (?)", g.Slice{1,2,3})
 // Where("age IN(?,?)", 18, 50)
 // Where(User{ Id : 1, UserName : "john"})
-func (d *SysUserDao) Where(where interface{}, args ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.Where(where, args...)}
+func (d *CourseCommentDao) Where(where interface{}, args ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Where(where, args...)}
 }
 
 // WherePri does the same logic as M.Where except that if the parameter <where>
@@ -172,54 +168,54 @@ func (d *SysUserDao) Where(where interface{}, args ...interface{}) *SysUserDao {
 // key value. That is, if primary key is "id" and given <where> parameter as "123", the
 // WherePri function treats the condition as "id=123", but M.Where treats the condition
 // as string "123".
-func (d *SysUserDao) WherePri(where interface{}, args ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.WherePri(where, args...)}
+func (d *CourseCommentDao) WherePri(where interface{}, args ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.WherePri(where, args...)}
 }
 
 // And adds "AND" condition to the where statement.
-func (d *SysUserDao) And(where interface{}, args ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.And(where, args...)}
+func (d *CourseCommentDao) And(where interface{}, args ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.And(where, args...)}
 }
 
 // Or adds "OR" condition to the where statement.
-func (d *SysUserDao) Or(where interface{}, args ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.Or(where, args...)}
+func (d *CourseCommentDao) Or(where interface{}, args ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Or(where, args...)}
 }
 
 // Group sets the "GROUP BY" statement for the model.
-func (d *SysUserDao) Group(groupBy string) *SysUserDao {
-	return &SysUserDao{M: d.M.Group(groupBy)}
+func (d *CourseCommentDao) Group(groupBy string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Group(groupBy)}
 }
 
 // Order sets the "ORDER BY" statement for the model.
-func (d *SysUserDao) Order(orderBy ...string) *SysUserDao {
-	return &SysUserDao{M: d.M.Order(orderBy...)}
+func (d *CourseCommentDao) Order(orderBy ...string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Order(orderBy...)}
 }
 
 // Limit sets the "LIMIT" statement for the model.
 // The parameter <limit> can be either one or two number, if passed two number is passed,
 // it then sets "LIMIT limit[0],limit[1]" statement for the model, or else it sets "LIMIT limit[0]"
 // statement.
-func (d *SysUserDao) Limit(limit ...int) *SysUserDao {
-	return &SysUserDao{M: d.M.Limit(limit...)}
+func (d *CourseCommentDao) Limit(limit ...int) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Limit(limit...)}
 }
 
 // Offset sets the "OFFSET" statement for the model.
 // It only makes sense for some databases like SQLServer, PostgreSQL, etc.
-func (d *SysUserDao) Offset(offset int) *SysUserDao {
-	return &SysUserDao{M: d.M.Offset(offset)}
+func (d *CourseCommentDao) Offset(offset int) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Offset(offset)}
 }
 
 // Page sets the paging number for the model.
 // The parameter <page> is started from 1 for paging.
 // Note that, it differs that the Limit function start from 0 for "LIMIT" statement.
-func (d *SysUserDao) Page(page, limit int) *SysUserDao {
-	return &SysUserDao{M: d.M.Page(page, limit)}
+func (d *CourseCommentDao) Page(page, limit int) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Page(page, limit)}
 }
 
 // Batch sets the batch operation number for the model.
-func (d *SysUserDao) Batch(batch int) *SysUserDao {
-	return &SysUserDao{M: d.M.Batch(batch)}
+func (d *CourseCommentDao) Batch(batch int) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Batch(batch)}
 }
 
 // Cache sets the cache feature for the model. It caches the result of the sql, which means
@@ -234,8 +230,8 @@ func (d *SysUserDao) Batch(batch int) *SysUserDao {
 // control the cache like changing the <duration> or clearing the cache with specified <name>.
 //
 // Note that, the cache feature is disabled if the model is operating on a transaction.
-func (d *SysUserDao) Cache(duration time.Duration, name ...string) *SysUserDao {
-	return &SysUserDao{M: d.M.Cache(duration, name...)}
+func (d *CourseCommentDao) Cache(duration time.Duration, name ...string) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Cache(duration, name...)}
 }
 
 // Data sets the operation data for the model.
@@ -245,39 +241,39 @@ func (d *SysUserDao) Cache(duration time.Duration, name ...string) *SysUserDao {
 // Data("uid", 10000)
 // Data(g.Map{"uid": 10000, "name":"john"})
 // Data(g.Slice{g.Map{"uid": 10000, "name":"john"}, g.Map{"uid": 20000, "name":"smith"})
-func (d *SysUserDao) Data(data ...interface{}) *SysUserDao {
-	return &SysUserDao{M: d.M.Data(data...)}
+func (d *CourseCommentDao) Data(data ...interface{}) *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Data(data...)}
 }
 
 // All does "SELECT FROM ..." statement for the model.
-// It retrieves the records from table and returns the result as []*model.SysUser.
+// It retrieves the records from table and returns the result as []*model.CourseComment.
 // It returns nil if there's no record retrieved with the given conditions from table.
 //
 // The optional parameter <where> is the same as the parameter of M.Where function,
 // see M.Where.
-func (d *SysUserDao) All(where ...interface{}) ([]*model.SysUser, error) {
+func (d *CourseCommentDao) All(where ...interface{}) ([]*model.CourseComment, error) {
 	all, err := d.M.All(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entities []*model.SysUser
+	var entities []*model.CourseComment
 	if err = all.Structs(&entities); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	return entities, nil
 }
 
-// One retrieves one record from table and returns the result as *model.SysUser.
+// One retrieves one record from table and returns the result as *model.CourseComment.
 // It returns nil if there's no record retrieved with the given conditions from table.
 //
 // The optional parameter <where> is the same as the parameter of M.Where function,
 // see M.Where.
-func (d *SysUserDao) One(where ...interface{}) (*model.SysUser, error) {
+func (d *CourseCommentDao) One(where ...interface{}) (*model.CourseComment, error) {
 	one, err := d.M.One(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entity *model.SysUser
+	var entity *model.CourseComment
 	if err = one.Struct(&entity); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -286,12 +282,12 @@ func (d *SysUserDao) One(where ...interface{}) (*model.SysUser, error) {
 
 // FindOne retrieves and returns a single Record by M.WherePri and M.One.
 // Also see M.WherePri and M.One.
-func (d *SysUserDao) FindOne(where ...interface{}) (*model.SysUser, error) {
+func (d *CourseCommentDao) FindOne(where ...interface{}) (*model.CourseComment, error) {
 	one, err := d.M.FindOne(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entity *model.SysUser
+	var entity *model.CourseComment
 	if err = one.Struct(&entity); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -300,12 +296,12 @@ func (d *SysUserDao) FindOne(where ...interface{}) (*model.SysUser, error) {
 
 // FindAll retrieves and returns Result by by M.WherePri and M.All.
 // Also see M.WherePri and M.All.
-func (d *SysUserDao) FindAll(where ...interface{}) ([]*model.SysUser, error) {
+func (d *CourseCommentDao) FindAll(where ...interface{}) ([]*model.CourseComment, error) {
 	all, err := d.M.FindAll(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entities []*model.SysUser
+	var entities []*model.CourseComment
 	if err = all.Structs(&entities); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -328,7 +324,7 @@ func (d *SysUserDao) FindAll(where ...interface{}) ([]*model.SysUser, error) {
 //
 // user := (*User)(nil)
 // err  := dao.User.Where("id", 1).Struct(&user)
-func (d *SysUserDao) Struct(pointer interface{}, where ...interface{}) error {
+func (d *CourseCommentDao) Struct(pointer interface{}, where ...interface{}) error {
 	return d.M.Struct(pointer, where...)
 }
 
@@ -348,7 +344,7 @@ func (d *SysUserDao) Struct(pointer interface{}, where ...interface{}) error {
 //
 // users := ([]*User)(nil)
 // err   := dao.User.Structs(&users)
-func (d *SysUserDao) Structs(pointer interface{}, where ...interface{}) error {
+func (d *CourseCommentDao) Structs(pointer interface{}, where ...interface{}) error {
 	return d.M.Structs(pointer, where...)
 }
 
@@ -373,14 +369,14 @@ func (d *SysUserDao) Structs(pointer interface{}, where ...interface{}) error {
 //
 // users := ([]*User)(nil)
 // err   := dao.User.Scan(&users)
-func (d *SysUserDao) Scan(pointer interface{}, where ...interface{}) error {
+func (d *CourseCommentDao) Scan(pointer interface{}, where ...interface{}) error {
 	return d.M.Scan(pointer, where...)
 }
 
 // Chunk iterates the table with given size and callback function.
-func (d *SysUserDao) Chunk(limit int, callback func(entities []*model.SysUser, err error) bool) {
+func (d *CourseCommentDao) Chunk(limit int, callback func(entities []*model.CourseComment, err error) bool) {
 	d.M.Chunk(limit, func(result gdb.Result, err error) bool {
-		var entities []*model.SysUser
+		var entities []*model.CourseComment
 		err = result.Structs(&entities)
 		if err == sql.ErrNoRows {
 			return false
@@ -390,16 +386,16 @@ func (d *SysUserDao) Chunk(limit int, callback func(entities []*model.SysUser, e
 }
 
 // LockUpdate sets the lock for update for current operation.
-func (d *SysUserDao) LockUpdate() *SysUserDao {
-	return &SysUserDao{M: d.M.LockUpdate()}
+func (d *CourseCommentDao) LockUpdate() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.LockUpdate()}
 }
 
 // LockShared sets the lock in share mode for current operation.
-func (d *SysUserDao) LockShared() *SysUserDao {
-	return &SysUserDao{M: d.M.LockShared()}
+func (d *CourseCommentDao) LockShared() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.LockShared()}
 }
 
 // Unscoped enables/disables the soft deleting feature.
-func (d *SysUserDao) Unscoped() *SysUserDao {
-	return &SysUserDao{M: d.M.Unscoped()}
+func (d *CourseCommentDao) Unscoped() *CourseCommentDao {
+	return &CourseCommentDao{M: d.M.Unscoped()}
 }

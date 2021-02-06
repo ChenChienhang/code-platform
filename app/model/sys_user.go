@@ -6,6 +6,7 @@ package model
 
 import (
 	"code-platform/app/model/internal"
+	"code-platform/library/common/response"
 )
 
 // SysUser is the golang structure for table sys_user.
@@ -13,47 +14,52 @@ type SysUser internal.SysUser
 
 // Fill with you ideas below.
 
-// 请求注册参数
-type SysUserRegisterReq struct {
-	Email        string // 邮箱
-	NickName     string // 昵称
-	RealName     string // 真实姓名
-	Num          string // 学号
-	Password     string // 密码
-	Major        string // 专业
-	Organization string // 单位
+type SysUserPageResp struct {
+	Records  []*SysUser
+	PageInfo *response.PageInfo
 }
 
-// 登录请求参数，用于前后端交互参数格式约定
-type SysUserSignInReq struct {
-	Passport string
-	Password string
+// 注册请求注册参数
+type RegisterReq struct {
+	Email            string // 邮箱
+	NickName         string // 昵称
+	RealName         string // 真实姓名
+	Num              string // 学号
+	Password         string // 密码
+	Major            string // 专业
+	Organization     string // 单位
+	VerificationCode string // 验证码
 }
 
-// 昵称唯一性检测请求参数，用于前后端交互参数格式约定
-type SysUserCheckNickNameReq struct {
-	Nickname string
-}
-
-// 邮箱唯一性检测请求参数，用于前后端交互参数格式约定
-type SysUserCheckEmailReq struct {
-	Email string
-}
-
-// 登录请求参数，用于前后端交互参数格式约定
+// 登录请求参数
 type LoginReq struct {
-	Username string
-	Password string
+	Username string // 用户名
+	Password string // 密码
 }
 
-// 登录请求参数，用于前后端交互参数格式约定
-type UserModifyReq struct {
+// 修改请求参数
+type UserUpdateReq struct {
+	UserId       int    // 主键
 	NickName     string // 昵称
 	RealName     string // 真实姓名
 	Num          string // 学号
 	OldPassword  string // 旧密码
-	NewPassword  string `orm:"password"` // 新密码
+	Password     string // 新密码
 	Gender       int    // 性别
 	Major        string // 专业
 	Organization string // 单位
+}
+
+// 重置密码请求注册参数
+type ResetPasswordReq struct {
+	Email            string // 邮箱
+	Password         string // 密码
+	VerificationCode string // 验证码
+}
+
+// 注销用户请求参数
+type DeletedUserReq struct {
+	UserId           int    // 主键
+	Password         string // 密码
+	VerificationCode string // 验证码
 }

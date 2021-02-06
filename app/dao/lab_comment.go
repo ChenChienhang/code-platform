@@ -8,17 +8,17 @@ import (
 	"code-platform/app/dao/internal"
 )
 
-// sysApiRoleDao is the manager for logic model data accessing
+// labCommentDao is the manager for logic model data accessing
 // and custom defined data operations functions management. You can define
 // methods on it to extend its functionality as you wish.
-type sysApiRoleDao struct {
-	*internal.SysApiRoleDao
+type labCommentDao struct {
+	*internal.LabCommentDao
 }
 
 var (
-	// SysApiRole is globally public accessible object for table sys_api_role operations.
-	SysApiRole = &sysApiRoleDao{
-		internal.SysApiRole,
+	// LabComment is globally public accessible object for table lab_comment operations.
+	LabComment = &labCommentDao{
+		internal.LabComment,
 	}
 )
 
