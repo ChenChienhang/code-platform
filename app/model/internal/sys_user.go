@@ -16,7 +16,7 @@ type SysUser struct {
 	NickName     string      `orm:"nick_name,unique" json:"nickName"`     // 昵称
 	RealName     string      `orm:"real_name"        json:"realName"`     // 真实姓名
 	Password     string      `orm:"password"         json:"password"`     // 密码
-	Avatar       string      `orm:"avatar"           json:"avatar"`       // 头像
+	AvatarUrl    string      `orm:"avatar_url"       json:"avatarUrl"`    // 头像
 	Gender       int         `orm:"gender"           json:"gender"`       // 性别
 	Major        string      `orm:"major"            json:"major"`        // 专业
 	Organization string      `orm:"organization"     json:"organization"` // 单位

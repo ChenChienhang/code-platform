@@ -31,7 +31,7 @@ type sysUserColumns struct {
 	NickName     string // 昵称
 	RealName     string // 真实姓名
 	Password     string // 密码
-	Avatar       string // 头像
+	AvatarUrl    string // 头像
 	Gender       string // 性别
 	Major        string // 专业
 	Organization string // 单位
@@ -52,7 +52,7 @@ var (
 			NickName:     "nick_name",
 			RealName:     "real_name",
 			Password:     "password",
-			Avatar:       "avatar",
+			AvatarUrl:    "avatar_url",
 			Gender:       "gender",
 			Major:        "major",
 			Organization: "organization",

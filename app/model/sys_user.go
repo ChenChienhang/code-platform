@@ -20,11 +20,13 @@ type SysUserPageResp struct {
 }
 
 // 注册请求注册参数
-type RegisterReq struct {
+type SignUpReq struct {
 	Email            string // 邮箱
 	NickName         string // 昵称
 	RealName         string // 真实姓名
+	AvatarUrl        string // 头像url
 	Num              string // 学号
+	Gender           int    // 性别
 	Password         string // 密码
 	Major            string // 专业
 	Organization     string // 单位
@@ -43,6 +45,7 @@ type UserUpdateReq struct {
 	NickName     string // 昵称
 	RealName     string // 真实姓名
 	Num          string // 学号
+	AvatarUrl    string // 头像url
 	OldPassword  string // 旧密码
 	Password     string // 新密码
 	Gender       int    // 性别
