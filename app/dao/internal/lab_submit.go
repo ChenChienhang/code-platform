@@ -25,8 +25,11 @@ type LabSubmitDao struct {
 
 // LabSubmitColumns defines and stores column names for table lab_submit.
 type labSubmitColumns struct {
-	LabSubmitId string //
-	LabId       string //
+	LabSubmitId   string //
+	LabId         string // lab id
+	ReportUrl     string // 存放实验报告pdf的url
+	TempReportUrl string // 暂存实验报告url
+	IsCode        string // 代码是否提交
 }
 
 var (
@@ -35,8 +38,11 @@ var (
 		M:     g.DB("default").Model("lab_submit").Safe(),
 		Table: "lab_submit",
 		Columns: labSubmitColumns{
-			LabSubmitId: "lab_submit_id",
-			LabId:       "lab_id",
+			LabSubmitId:   "lab_submit_id",
+			LabId:         "lab_id",
+			ReportUrl:     "report_url",
+			TempReportUrl: "temp_report_url",
+			IsCode:        "is_code",
 		},
 	}
 )
