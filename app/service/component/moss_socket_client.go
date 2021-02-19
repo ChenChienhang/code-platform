@@ -50,7 +50,7 @@ type MossClient struct {
 // @return *MossClient
 // @return error
 // @date 2021-01-11 17:03:26
-func NewMossClient(language, userId string) (*MossClient, error) {
+func NewMossClient(language string) (*MossClient, error) {
 	supportedLanguages := garray.NewStrArrayFrom(g.SliceStr{"c", "cc", "java", "ml", "pascal", "ada", "lisp", "schema", "haskell", "fortran",
 		"ascii", "vhdl", "perl", "matlab", "python", "mips", "prolog", "spice", "vb", "csharp", "modula2", "a8086",
 		"javascript", "plsql"})
@@ -65,7 +65,7 @@ func NewMossClient(language, userId string) (*MossClient, error) {
 			optC:               "",
 			supportedLanguages: supportedLanguages,
 			addr:               "moss.stanford.edu:7690",
-			userID:             userId,
+			userID:             g.Cfg().GetString("moss.userId"),
 			language:           language,
 		}, nil
 	} else {
