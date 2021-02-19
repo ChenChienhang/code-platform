@@ -22,7 +22,7 @@ func TestMoss(t *testing.T) {
 	if err != nil {
 		fmt.Print(err)
 	}
-	c, err := component.NewMossClient("c", "604014254")
+	c, err := component.NewMossClient("c")
 	defer func(err error) {
 		err = c.Close()
 		if err != nil {
@@ -56,7 +56,11 @@ func TestMoss(t *testing.T) {
 }
 
 func TestMinio(t *testing.T) {
-	component.InitMinioUtil()
+	all, err := dao.SysUser.WherePri(122).FindAll()
+	if err != nil {
+		println(err)
+	}
+	println(all)
 }
 
 func TestPage(t *testing.T) {
@@ -81,5 +85,9 @@ func TestPassword(t *testing.T) {
 }
 
 func Test4(t *testing.T) {
-
+	all, err := dao.Course.All()
+	if err != nil {
+		println(err)
+	}
+	println(all)
 }
