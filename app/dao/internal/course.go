@@ -25,15 +25,17 @@ type CourseDao struct {
 
 // CourseColumns defines and stores column names for table course.
 type courseColumns struct {
-	CourseId   string // 主键
-	TeacherId  string // 教师id
-	CourseName string // 课程名称，限长15字
-	CourseDes  string // 课程描述,限两百字
-	SecretKey  string // 加入课程的密码,6位
-	Closed     string // 结课标志
-	CreatedAt  string // 创建时间
-	UpdatedAt  string // 修改时间
-	DeletedAt  string // 删除时间
+	CourseId    string // 主键
+	TeacherId   string // 教师id
+	TeacherName string //
+	CourseName  string // 课程名称，限长15字
+	CourseDes   string // 课程描述,限两百字
+	PicUrl      string // 封面url
+	SecretKey   string // 加入课程的密码,6位
+	Closed      string // 结课标志
+	CreatedAt   string // 创建时间
+	UpdatedAt   string // 修改时间
+	DeletedAt   string // 删除时间
 }
 
 var (
@@ -42,15 +44,17 @@ var (
 		M:     g.DB("default").Model("course").Safe(),
 		Table: "course",
 		Columns: courseColumns{
-			CourseId:   "course_id",
-			TeacherId:  "teacher_id",
-			CourseName: "course_name",
-			CourseDes:  "course_des",
-			SecretKey:  "secret_key",
-			Closed:     "closed",
-			CreatedAt:  "created_at",
-			UpdatedAt:  "updated_at",
-			DeletedAt:  "deleted_at",
+			CourseId:    "course_id",
+			TeacherId:   "teacher_id",
+			TeacherName: "teacher_name",
+			CourseName:  "course_name",
+			CourseDes:   "course_des",
+			PicUrl:      "pic_url",
+			SecretKey:   "secret_key",
+			Closed:      "closed",
+			CreatedAt:   "created_at",
+			UpdatedAt:   "updated_at",
+			DeletedAt:   "deleted_at",
 		},
 	}
 )

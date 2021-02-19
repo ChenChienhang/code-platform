@@ -26,21 +26,6 @@ type CoursePageResp struct {
 //	SecretKey  string // 加入课程的密码
 //}
 
-// StuNotInCourseReq 用于还没有加入课程的学生
-type StuNotInCourseReq struct {
-	StuNo       []string // 学生学号
-	StuRealName []string // 学生真名
-	CourseId    int      // 课程id
-}
-
-// StuNotInCourseReq 用于还没有加入课程的学生
-type StuNotInCourseResp struct {
-	StuNo         []string // 学生学号
-	StuRealName   []string // 学生真名
-	IsStuNo       []bool   // 学生学号是否匹配
-	IsStuRealName []string // 学生真名
-}
-
 // 课程修改
 //type CourseModifyReq struct {
 //	CourseId   int    // 主键
