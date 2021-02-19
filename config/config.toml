@@ -40,7 +40,7 @@
         link   = "mysql:root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
         prefix = ""
         jsonCase = "CamelLower"
-        tables = "lab_comment,course,course_comment,lab_comment,lab_submit,sys_user"
+        tables = "signIn_course,lab,lab_comment,course,course_comment,lab_comment,lab_submit,sys_user"
 [mail]
 #    邮箱
     user    =   "jankins.chen@foxmail.com"
@@ -52,3 +52,18 @@
     endpoint = "118.178.253.239:9000"
     accessKeyID = "AKIAIOSFODNN7EXAMPLE"
     secretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+[[theiaServer]]
+    host = "118.178.253.239"
+    user = "root"
+    pass = "4125qaswIklo8569"
+    max = 15
+
+[moss]
+    userId = "604014254"
+
+#
+#[[theiaServer]]
+#    host = "118.18.253.239"
+#    user = ""
+#    pass = ""
