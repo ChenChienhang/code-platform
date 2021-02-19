@@ -10,8 +10,8 @@ import (
 	"github.com/gogf/gf/os/glog"
 )
 
-// jsonResponse 数据返回通用JSON数据结构
-type jsonResponse struct {
+// JsonResponse 数据返回通用JSON数据结构
+type JsonResponse struct {
 	Code    int         `json:"code"`    // 错误码(0成功，其他错误)
 	Message string      `json:"message"` // 提示信息
 	Data    interface{} `json:"data"`    // 返回数据(业务接口定义具体数据结构)
@@ -38,7 +38,7 @@ func Success(r *ghttp.Request, data ...interface{}) {
 	}
 	// 写回json
 	_ = r.Response.WriteJson(
-		jsonResponse{
+		JsonResponse{
 			Code:    000000,
 			Message: "执行成功",
 			Data:    responseData,
@@ -59,12 +59,13 @@ func Exit(r *ghttp.Request, err error) {
 	}
 	// 封装错误信息,返回给前端
 	_ = r.Response.WriteJson(
-		jsonResponse{
+		JsonResponse{
 			Code:    gerror.Code(err),
 			Message: err.Error(),
 			Data:    false,
 		},
 	)
+	r.Exit()
 }
 
 func GetPageReq(r *ghttp.Request) (int, int) {
