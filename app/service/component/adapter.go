@@ -9,22 +9,26 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	"github.com/casbin/casbin/v2/persist"
 	"github.com/gogf/gf/database/gdb"
+	"github.com/gogf/gf/os/glog"
 	"runtime"
 	"time"
 )
 
-var Enforcer *casbin.Enforcer
+var Enforcer *casbin.Enforcer = initCasbin()
 
-func InitCasbin() {
+func initCasbin() (e *casbin.Enforcer) {
 	// 创建适配器
 	a, err := NewAdapter("casbin_rule")
 	if err != nil {
-		panic(err)
+		glog.Error("初始casbin失败")
+		//panic(err)
 	}
 	// 初始化鉴权器
-	if Enforcer, err = casbin.NewEnforcer("./config/rbac.conf", a); err != nil {
-		panic(err)
+	if e, err = casbin.NewEnforcer("./config/rbac.conf", a); err != nil {
+		glog.Error("初始casbin失败")
+		//panic(err)
 	}
+	return e
 }
 
 type CasbinRule struct {
