@@ -18,6 +18,7 @@ import (
 )
 
 var GfToken = &gtoken.GfToken{
+	CacheMode:       2,
 	LoginPath:       "/login",
 	LogoutPath:      "/logout",
 	LoginBeforeFunc: LoginBeforeFunc,
@@ -27,10 +28,10 @@ var GfToken = &gtoken.GfToken{
 	AuthExcludePaths: g.SliceStr{
 		"/web/user/nickname",
 		"/web/user/signup",
-		"/web/user/email",
+		"/web/user/email/*",
 		"/web/user/password",
 		"/web/user/verificationCode",
-		"/web/user/test",
+		"/web/user/test/*",
 	},
 }
 
@@ -54,12 +55,12 @@ func AuthAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	//存在令牌
 	if respData.Success() {
 		// 鉴权
-		AuthRes, err := authenticate(respData.GetString("userKey"), r.URL.Path, r.Method)
+		isAuth, err := authenticate(respData.GetString("userKey"), r.URL.Path, r.Method)
 		//其他错误
 		if err != nil {
 			response.Exit(r, code.OtherError)
 		}
-		if !AuthRes {
+		if !isAuth {
 			// 权限不足
 			response.Exit(r, code.PermissionError)
 		}
@@ -147,16 +148,9 @@ func LoginAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	if !respData.Success() {
 		response.Exit(r, code.LoginError)
 	} else {
-		// 返回token，nickname，avatar
-		if one, err := dao.SysUser.WherePri(respData.GetInt("userKey")).
-			Fields(dao.SysUser.Columns.NickName, dao.SysUser.Columns.Avatar).FindOne(); err != nil {
-			response.Exit(r, err)
-		} else {
-			response.Success(r, g.Map{
-				"token":    respData.GetString("token"),
-				"nickname": one.NickName,
-				"avatar":   one.Avatar,
-			})
-		}
+		// 返回token
+		response.Success(r, g.Map{
+			"token": respData.GetString("token"),
+		})
 	}
 }
