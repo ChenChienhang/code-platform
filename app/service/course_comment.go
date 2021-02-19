@@ -15,7 +15,7 @@ var CourseCommentService = new(courseCommentService)
 
 type courseCommentService struct{}
 
-func (s *courseCommentService) ListCourseCommentPageByCourseId(pageCurrent, pageSize, courseId int) (*model.CourseCommentEntityResp, error) {
+func (s *courseCommentService) ListCourseCommentByCourseId(pageCurrent, pageSize, courseId int) (*model.CourseCommentEntityResp, error) {
 	var comments []*model.CourseCommentEntity
 	// 分页，排序
 	if err := dao.CourseComment.Page(pageCurrent, pageSize).Order(dao.CourseComment.Columns.CreatedAt+" desc").
@@ -62,7 +62,7 @@ func (s *courseCommentService) ListCourseCommentPageByCourseId(pageCurrent, page
 	return resp, nil
 }
 
-func (s *courseCommentService) GetLabCommentPageByLabId(pageCurrent, pageSize, labId int) (*model.LabCommentEntityResp, error) {
+func (s *courseCommentService) ListLabCommentByLabId(pageCurrent, pageSize, labId int) (*model.LabCommentEntityResp, error) {
 	var comments []*model.LabCommentEntity
 	// 分页，排序
 	if err := dao.LabComment.Page(pageCurrent, pageSize).Order(dao.LabComment.Columns.CreatedAt+" desc").

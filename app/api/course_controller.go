@@ -16,47 +16,67 @@ var CourseController = new(courseController)
 
 type courseController struct{}
 
-// InsertCourse 教师新建课程
+// GetCourse 根据课程id查询相关的课程
+// @receiver c courseController
+// @params r
+// @date 2021-02-08 19:18:26
+func (c *courseController) GetCourse(r *ghttp.Request) {
+	courseId := r.GetInt("courseId")
+	one, err := dao.Course.FieldsEx(dao.Course.Columns.DeletedAt).WherePri(courseId).FindOne()
+	if err != nil {
+		response.Exit(r, err)
+	}
+	// 只有开设该课程的教师可以查出密钥
+	if one.TeacherId != component.GetUserId(r) {
+		one.SecretKey = 0
+	}
+	response.Success(r, one)
+}
+
+// Insert 教师新建课程
 // @receiver c
 // @params r
 // @date 2021-01-14 11:37:04
-func (c *courseCommentController) InsertCourse(r *ghttp.Request) {
+func (c *courseController) Insert(r *ghttp.Request) {
 	// 入参
 	var req *model.Course
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
 	req.TeacherId = component.GetUserId(r)
+	pic := r.GetUploadFile("pic")
 	// 保存
-	if _, err := dao.Course.Insert(req); err != nil {
+	if err := service.CourseService.InsertCourse(req, pic); err != nil {
 		response.Exit(r, err)
 	}
 	response.Success(r, true)
 }
 
-// UpdateCourseByCourseId 修改课程
+// Update 修改课程
 // @receiver c
 // @params r
 // @date 2021-01-14 11:40:27
-func (c *courseCommentController) UpdateCourseByCourseId(r *ghttp.Request) {
+func (c *courseController) Update(r *ghttp.Request) {
 	//入参
 	var req *model.Course
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
 	req.TeacherId = component.GetUserId(r)
+	pic := r.GetUploadFile("pic")
 	//保存
-	if _, err := dao.Course.Save(req); err != nil {
+	if err := service.CourseService.Update(req, pic); err != nil {
 		response.Exit(r, err)
 	}
+
 	response.Success(r, true)
 }
 
-// ListCoursePageByTeacherId 根据教师id分页查询所开设课程
+// ListByTeacherId 根据教师id分页查询所开设课程
 // @receiver c
 // @params r
 // @date 2021-01-14 13:36:47
-func (c *courseController) ListCoursePageByTeacherId(r *ghttp.Request) {
+func (c *courseController) ListByTeacherId(r *ghttp.Request) {
 	teacherId := component.GetUserId(r)
 	current, size := response.GetPageReq(r)
 	resp, err := service.CourseService.ListCourseByTeacherId(current, size, teacherId)
@@ -66,11 +86,25 @@ func (c *courseController) ListCoursePageByTeacherId(r *ghttp.Request) {
 	response.Success(r, resp)
 }
 
-// ListStuPageByCourseId 根据课程id分页获取修读该课程的学生
+// ListCourseByStuId 根据学生id分页查询所修读课程
 // @receiver c
 // @params r
 // @date 2021-01-14 13:36:47
-func (c *courseController) ListStuPageByCourseId(r *ghttp.Request) {
+func (c *courseController) ListCourseByStuId(r *ghttp.Request) {
+	stuId := component.GetUserId(r)
+	current, size := response.GetPageReq(r)
+	resp, err := service.CourseService.ListCourseByStuId(current, size, stuId)
+	if err != nil {
+		response.Exit(r, err)
+	}
+	response.Success(r, resp)
+}
+
+// ListStuByCourseId 根据课程id分页获取修读该课程的学生
+// @receiver c
+// @params r
+// @date 2021-01-14 13:36:47
+func (c *courseController) ListStuByCourseId(r *ghttp.Request) {
 	current, size := response.GetPageReq(r)
 	courseId := r.GetInt("courseId")
 	resp, err := service.CourseService.ListStuPageByCourseId(courseId, current, size)
@@ -80,46 +114,45 @@ func (c *courseController) ListStuPageByCourseId(r *ghttp.Request) {
 	response.Success(r, resp)
 }
 
-// JoinCourse 学生加入课程
+// StuJoinCourse 学生加入课程
 // @receiver c
 // @params r
 // @date 2021-01-20 22:58:49
-func (c *courseController) JoinCourse(r *ghttp.Request) {
+func (c *courseController) StuJoinCourse(r *ghttp.Request) {
 	// 获取必要信息
 	UserId := component.GetUserId(r)
 	CourseId := r.GetInt("courseId")
 	SecretKey := r.GetInt("secretKey")
-	if err := service.CourseService.JoinCourse(UserId, CourseId, SecretKey); err != nil {
+	if err := service.CourseService.StuJoinCourse(UserId, CourseId, SecretKey); err != nil {
 		response.Exit(r, err)
 	}
 	response.Success(r, true)
 }
 
-// DisbandCourseByCourseId 教师解散课程，也就是删除
+// QuitCourse 学生退出课程
+// @receiver c courseController
+// @params r
+// @date 2021-02-06 21:19:55
+func (c courseController) QuitCourse(r *ghttp.Request) {
+	courseId := r.GetInt("courseId")
+	userId := r.GetInt("userId")
+
+	if err := dao.ReCourseUser.DeleteByUserIdAndCourseId(userId, courseId); err != nil {
+		response.Exit(r, err)
+	}
+	response.Success(r, true)
+}
+
+// DeleteCourse 教师解散课程，也就是删除课程
 // @receiver c labController
 // @params r
 // @date 2021-01-20 23:07:30
-func (c *courseController) DisbandCourseByCourseId(r *ghttp.Request) {
+func (c *courseController) DeleteCourse(r *ghttp.Request) {
 	courseId := r.GetInt("courseId")
-	if _, err := dao.Course.WherePri(courseId).And(dao.Course.Columns.TeacherId, component.GetUserId(r)).
-		Delete(); err != nil {
+	secretKey := r.GetInt("secretKey")
+	teacherId := component.GetUserId(r)
+	if err := service.CourseService.DisbandCourseByCourseId(teacherId, courseId, secretKey); err != nil {
 		response.Exit(r, err)
 	}
 	response.Success(r, true)
 }
-
-// FindStuNotInCourse 找出所有不在该课程的学生
-// @receiver c
-// @params r
-// @date 2021-01-14 15:39:05
-//func (c *labController) FindStuNotInCourse(r *ghttp.Request) {
-//	var req *model.StuNotInCourseReq
-//	if err := r.Parse(&req); err != nil {
-//		response.Exit(r, err)
-//	}
-//	resp, err := service.CourseService.FindStuNotInCourse(req)
-//	if err != nil {
-//		response.Exit(r, err)
-//	}
-//	response.Success(r, resp)
-//}
