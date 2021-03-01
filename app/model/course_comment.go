@@ -7,6 +7,7 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
+	"github.com/gogf/gf/os/gtime"
 )
 
 // CourseComment is the golang structure for table course_comment.
@@ -14,13 +15,40 @@ type CourseComment internal.CourseComment
 
 // Fill with you ideas below.
 
-type CourseCommentEntity struct {
-	Comment       *CourseComment   `json:"comment"`       // 评论主体
-	ReplyComments []*CourseComment `json:"replyComments"` // 子评论
+type CourseCommentResp struct {
+	CourseCommentId int         `orm:"course_comment_id,primary" json:"course_comment_id"` // 主键
+	CourseId        int         `orm:"course_id"                 json:"course_id"`         // 实验内容
+	CommentText     string      `orm:"comment_text"              json:"comment_text"`      // 评论内容，限120字
+	Pid             int         `orm:"pid"                       json:"pid"`               // 父评论id，主评时为空
+	UserId          int         `orm:"user_id"                   json:"user_id"`           // 发评论的用户id
+	Username        string      `orm:"username"                  json:"username"`          // 回复者的用户名
+	ReplyUsername   string      `orm:"reply_username"            json:"reply_username"`    // 被回复者的用户名
+	ReplyId         int         `orm:"reply_id"                  json:"reply_id"`          // 回复的评论id
+	CreatedAt       *gtime.Time `orm:"created_at"                json:"created_at"`        // 创建时间
+	UpdatedAt       *gtime.Time `orm:"updated_at"                json:"updated_at"`        // 更新时间
 }
 
-// CourseCommentEntityResp 返回集
-type CourseCommentEntityResp struct {
+type CourseCommentEntity struct {
+	Comment       *CourseComment   `json:"comment"`        // 评论主体
+	ReplyComments []*CourseComment `json:"reply_comments"` // 子评论
+}
+
+// CourseCommentEntityPageResp 返回集
+type CourseCommentEntityPageResp struct {
 	Records  []*CourseCommentEntity `json:"records"`
-	PageInfo *response.PageInfo     `json:"pageInfo"` // 页面信息
+	PageInfo *response.PageInfo     `json:"page_info"` // 页面信息
+}
+
+type InsertCourseCommentReq struct {
+	CourseId    int    // 实验内容
+	CommentText string // 评论内容
+	Pid         int    // 父评论id，主评时为空
+	UserId      int    // 发评论的用户id
+	ReplyId     int    // 回复的评论id
+}
+
+type ListCourseCommentReq struct {
+	PageCurrent int // 页码
+	PageSize    int // 页面大小
+	CourseId    int // 课程id
 }

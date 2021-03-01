@@ -15,42 +15,36 @@ import (
 	"code-platform/app/model"
 )
 
-// LabDao is the manager for logic model data accessing
+// CheckinDetailDao is the manager for logic model data accessing
 // and custom defined data operations functions management.
-type LabDao struct {
+type CheckinDetailDao struct {
 	gmvc.M
 	Table   string
-	Columns labColumns
+	Columns checkinDetailColumns
 }
 
-// LabColumns defines and stores column names for table lab.
-type labColumns struct {
-	LabId         string // 主键
-	CourseId      string // 该实验隶属的课程
-	Title         string // 标题
-	Description   string // 实验内容描述，无字数限制
-	AttachmentUrl string // 实验附件url
-	DeadLine      string // 截止时间
-	CreatedAt     string // 创建时间
-	UpdatedAt     string // 修改时间
-	DeletedAt     string // 删除标志
+// CheckinDetailColumns defines and stores column names for table checkin_detail.
+type checkinDetailColumns struct {
+	CheckinDetailId string // id
+	StuId           string // 学生id
+	CheckinRecordId string // 签到记录id
+	CreatedAt       string // 创建时间
+	UpdatedAt       string // 更新时间
+	DeletedAt       string // 删除时间
 }
 
 var (
-	// Lab is globally public accessible object for table lab operations.
-	Lab = &LabDao{
-		M:     g.DB("default").Model("lab").Safe(),
-		Table: "lab",
-		Columns: labColumns{
-			LabId:         "lab_id",
-			CourseId:      "course_id",
-			Title:         "title",
-			Description:   "description",
-			AttachmentUrl: "attachment_url",
-			DeadLine:      "dead_line",
-			CreatedAt:     "created_at",
-			UpdatedAt:     "updated_at",
-			DeletedAt:     "deleted_at",
+	// CheckinDetail is globally public accessible object for table checkin_detail operations.
+	CheckinDetail = &CheckinDetailDao{
+		M:     g.DB("default").Model("checkin_detail").Safe(),
+		Table: "checkin_detail",
+		Columns: checkinDetailColumns{
+			CheckinDetailId: "checkin_detail_id",
+			StuId:           "stu_id",
+			CheckinRecordId: "checkin_record_id",
+			CreatedAt:       "created_at",
+			UpdatedAt:       "updated_at",
+			DeletedAt:       "deleted_at",
 		},
 	}
 )
@@ -59,34 +53,34 @@ var (
 // of current DB object and with given context in it.
 // Note that this returned DB object can be used only once, so do not assign it to
 // a global or package variable for long using.
-func (d *LabDao) Ctx(ctx context.Context) *LabDao {
-	return &LabDao{M: d.M.Ctx(ctx)}
+func (d *CheckinDetailDao) Ctx(ctx context.Context) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Ctx(ctx)}
 }
 
 // As sets an alias name for current table.
-func (d *LabDao) As(as string) *LabDao {
-	return &LabDao{M: d.M.As(as)}
+func (d *CheckinDetailDao) As(as string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.As(as)}
 }
 
 // TX sets the transaction for current operation.
-func (d *LabDao) TX(tx *gdb.TX) *LabDao {
-	return &LabDao{M: d.M.TX(tx)}
+func (d *CheckinDetailDao) TX(tx *gdb.TX) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.TX(tx)}
 }
 
 // Master marks the following operation on master node.
-func (d *LabDao) Master() *LabDao {
-	return &LabDao{M: d.M.Master()}
+func (d *CheckinDetailDao) Master() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Master()}
 }
 
 // Slave marks the following operation on slave node.
 // Note that it makes sense only if there's any slave node configured.
-func (d *LabDao) Slave() *LabDao {
-	return &LabDao{M: d.M.Slave()}
+func (d *CheckinDetailDao) Slave() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Slave()}
 }
 
 // Args sets custom arguments for model operation.
-func (d *LabDao) Args(args ...interface{}) *LabDao {
-	return &LabDao{M: d.M.Args(args...)}
+func (d *CheckinDetailDao) Args(args ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Args(args...)}
 }
 
 // LeftJoin does "LEFT JOIN ... ON ..." statement on the model.
@@ -94,8 +88,8 @@ func (d *LabDao) Args(args ...interface{}) *LabDao {
 // and also with its alias name, like:
 // Table("user").LeftJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").LeftJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *LabDao) LeftJoin(table ...string) *LabDao {
-	return &LabDao{M: d.M.LeftJoin(table...)}
+func (d *CheckinDetailDao) LeftJoin(table ...string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.LeftJoin(table...)}
 }
 
 // RightJoin does "RIGHT JOIN ... ON ..." statement on the model.
@@ -103,8 +97,8 @@ func (d *LabDao) LeftJoin(table ...string) *LabDao {
 // and also with its alias name, like:
 // Table("user").RightJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").RightJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *LabDao) RightJoin(table ...string) *LabDao {
-	return &LabDao{M: d.M.RightJoin(table...)}
+func (d *CheckinDetailDao) RightJoin(table ...string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.RightJoin(table...)}
 }
 
 // InnerJoin does "INNER JOIN ... ON ..." statement on the model.
@@ -112,36 +106,36 @@ func (d *LabDao) RightJoin(table ...string) *LabDao {
 // and also with its alias name, like:
 // Table("user").InnerJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").InnerJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *LabDao) InnerJoin(table ...string) *LabDao {
-	return &LabDao{M: d.M.InnerJoin(table...)}
+func (d *CheckinDetailDao) InnerJoin(table ...string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.InnerJoin(table...)}
 }
 
 // Fields sets the operation fields of the model, multiple fields joined using char ','.
 // The parameter <fieldNamesOrMapStruct> can be type of string/map/*map/struct/*struct.
-func (d *LabDao) Fields(fieldNamesOrMapStruct ...interface{}) *LabDao {
-	return &LabDao{M: d.M.Fields(fieldNamesOrMapStruct...)}
+func (d *CheckinDetailDao) Fields(fieldNamesOrMapStruct ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Fields(fieldNamesOrMapStruct...)}
 }
 
 // FieldsEx sets the excluded operation fields of the model, multiple fields joined using char ','.
 // The parameter <fieldNamesOrMapStruct> can be type of string/map/*map/struct/*struct.
-func (d *LabDao) FieldsEx(fieldNamesOrMapStruct ...interface{}) *LabDao {
-	return &LabDao{M: d.M.FieldsEx(fieldNamesOrMapStruct...)}
+func (d *CheckinDetailDao) FieldsEx(fieldNamesOrMapStruct ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.FieldsEx(fieldNamesOrMapStruct...)}
 }
 
 // Option sets the extra operation option for the model.
-func (d *LabDao) Option(option int) *LabDao {
-	return &LabDao{M: d.M.Option(option)}
+func (d *CheckinDetailDao) Option(option int) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Option(option)}
 }
 
 // OmitEmpty sets OPTION_OMITEMPTY option for the model, which automatically filers
 // the data and where attributes for empty values.
-func (d *LabDao) OmitEmpty() *LabDao {
-	return &LabDao{M: d.M.OmitEmpty()}
+func (d *CheckinDetailDao) OmitEmpty() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.OmitEmpty()}
 }
 
 // Filter marks filtering the fields which does not exist in the fields of the operated table.
-func (d *LabDao) Filter() *LabDao {
-	return &LabDao{M: d.M.Filter()}
+func (d *CheckinDetailDao) Filter() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Filter()}
 }
 
 // Where sets the condition statement for the model. The parameter <where> can be type of
@@ -155,8 +149,8 @@ func (d *LabDao) Filter() *LabDao {
 // Where("status IN (?)", g.Slice{1,2,3})
 // Where("age IN(?,?)", 18, 50)
 // Where(User{ Id : 1, UserName : "john"})
-func (d *LabDao) Where(where interface{}, args ...interface{}) *LabDao {
-	return &LabDao{M: d.M.Where(where, args...)}
+func (d *CheckinDetailDao) Where(where interface{}, args ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Where(where, args...)}
 }
 
 // WherePri does the same logic as M.Where except that if the parameter <where>
@@ -164,54 +158,54 @@ func (d *LabDao) Where(where interface{}, args ...interface{}) *LabDao {
 // key value. That is, if primary key is "id" and given <where> parameter as "123", the
 // WherePri function treats the condition as "id=123", but M.Where treats the condition
 // as string "123".
-func (d *LabDao) WherePri(where interface{}, args ...interface{}) *LabDao {
-	return &LabDao{M: d.M.WherePri(where, args...)}
+func (d *CheckinDetailDao) WherePri(where interface{}, args ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.WherePri(where, args...)}
 }
 
 // And adds "AND" condition to the where statement.
-func (d *LabDao) And(where interface{}, args ...interface{}) *LabDao {
-	return &LabDao{M: d.M.And(where, args...)}
+func (d *CheckinDetailDao) And(where interface{}, args ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.And(where, args...)}
 }
 
 // Or adds "OR" condition to the where statement.
-func (d *LabDao) Or(where interface{}, args ...interface{}) *LabDao {
-	return &LabDao{M: d.M.Or(where, args...)}
+func (d *CheckinDetailDao) Or(where interface{}, args ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Or(where, args...)}
 }
 
 // Group sets the "GROUP BY" statement for the model.
-func (d *LabDao) Group(groupBy string) *LabDao {
-	return &LabDao{M: d.M.Group(groupBy)}
+func (d *CheckinDetailDao) Group(groupBy string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Group(groupBy)}
 }
 
 // Order sets the "ORDER BY" statement for the model.
-func (d *LabDao) Order(orderBy ...string) *LabDao {
-	return &LabDao{M: d.M.Order(orderBy...)}
+func (d *CheckinDetailDao) Order(orderBy ...string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Order(orderBy...)}
 }
 
 // Limit sets the "LIMIT" statement for the model.
 // The parameter <limit> can be either one or two number, if passed two number is passed,
 // it then sets "LIMIT limit[0],limit[1]" statement for the model, or else it sets "LIMIT limit[0]"
 // statement.
-func (d *LabDao) Limit(limit ...int) *LabDao {
-	return &LabDao{M: d.M.Limit(limit...)}
+func (d *CheckinDetailDao) Limit(limit ...int) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Limit(limit...)}
 }
 
 // Offset sets the "OFFSET" statement for the model.
 // It only makes sense for some databases like SQLServer, PostgreSQL, etc.
-func (d *LabDao) Offset(offset int) *LabDao {
-	return &LabDao{M: d.M.Offset(offset)}
+func (d *CheckinDetailDao) Offset(offset int) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Offset(offset)}
 }
 
 // Page sets the paging number for the model.
 // The parameter <page> is started from 1 for paging.
 // Note that, it differs that the Limit function start from 0 for "LIMIT" statement.
-func (d *LabDao) Page(page, limit int) *LabDao {
-	return &LabDao{M: d.M.Page(page, limit)}
+func (d *CheckinDetailDao) Page(page, limit int) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Page(page, limit)}
 }
 
 // Batch sets the batch operation number for the model.
-func (d *LabDao) Batch(batch int) *LabDao {
-	return &LabDao{M: d.M.Batch(batch)}
+func (d *CheckinDetailDao) Batch(batch int) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Batch(batch)}
 }
 
 // Cache sets the cache feature for the model. It caches the result of the sql, which means
@@ -226,8 +220,8 @@ func (d *LabDao) Batch(batch int) *LabDao {
 // control the cache like changing the <duration> or clearing the cache with specified <name>.
 //
 // Note that, the cache feature is disabled if the model is operating on a transaction.
-func (d *LabDao) Cache(duration time.Duration, name ...string) *LabDao {
-	return &LabDao{M: d.M.Cache(duration, name...)}
+func (d *CheckinDetailDao) Cache(duration time.Duration, name ...string) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Cache(duration, name...)}
 }
 
 // Data sets the operation data for the model.
@@ -237,39 +231,39 @@ func (d *LabDao) Cache(duration time.Duration, name ...string) *LabDao {
 // Data("uid", 10000)
 // Data(g.Map{"uid": 10000, "name":"john"})
 // Data(g.Slice{g.Map{"uid": 10000, "name":"john"}, g.Map{"uid": 20000, "name":"smith"})
-func (d *LabDao) Data(data ...interface{}) *LabDao {
-	return &LabDao{M: d.M.Data(data...)}
+func (d *CheckinDetailDao) Data(data ...interface{}) *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Data(data...)}
 }
 
 // All does "SELECT FROM ..." statement for the model.
-// It retrieves the records from table and returns the result as []*model.Lab.
+// It retrieves the records from table and returns the result as []*model.CheckinDetail.
 // It returns nil if there's no record retrieved with the given conditions from table.
 //
 // The optional parameter <where> is the same as the parameter of M.Where function,
 // see M.Where.
-func (d *LabDao) All(where ...interface{}) ([]*model.Lab, error) {
+func (d *CheckinDetailDao) All(where ...interface{}) ([]*model.CheckinDetail, error) {
 	all, err := d.M.All(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entities []*model.Lab
+	var entities []*model.CheckinDetail
 	if err = all.Structs(&entities); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	return entities, nil
 }
 
-// One retrieves one record from table and returns the result as *model.Lab.
+// One retrieves one record from table and returns the result as *model.CheckinDetail.
 // It returns nil if there's no record retrieved with the given conditions from table.
 //
 // The optional parameter <where> is the same as the parameter of M.Where function,
 // see M.Where.
-func (d *LabDao) One(where ...interface{}) (*model.Lab, error) {
+func (d *CheckinDetailDao) One(where ...interface{}) (*model.CheckinDetail, error) {
 	one, err := d.M.One(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entity *model.Lab
+	var entity *model.CheckinDetail
 	if err = one.Struct(&entity); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -278,12 +272,12 @@ func (d *LabDao) One(where ...interface{}) (*model.Lab, error) {
 
 // FindOne retrieves and returns a single Record by M.WherePri and M.One.
 // Also see M.WherePri and M.One.
-func (d *LabDao) FindOne(where ...interface{}) (*model.Lab, error) {
+func (d *CheckinDetailDao) FindOne(where ...interface{}) (*model.CheckinDetail, error) {
 	one, err := d.M.FindOne(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entity *model.Lab
+	var entity *model.CheckinDetail
 	if err = one.Struct(&entity); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -292,12 +286,12 @@ func (d *LabDao) FindOne(where ...interface{}) (*model.Lab, error) {
 
 // FindAll retrieves and returns Result by by M.WherePri and M.All.
 // Also see M.WherePri and M.All.
-func (d *LabDao) FindAll(where ...interface{}) ([]*model.Lab, error) {
+func (d *CheckinDetailDao) FindAll(where ...interface{}) ([]*model.CheckinDetail, error) {
 	all, err := d.M.FindAll(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entities []*model.Lab
+	var entities []*model.CheckinDetail
 	if err = all.Structs(&entities); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -320,7 +314,7 @@ func (d *LabDao) FindAll(where ...interface{}) ([]*model.Lab, error) {
 //
 // user := (*User)(nil)
 // err  := dao.User.Where("id", 1).Struct(&user)
-func (d *LabDao) Struct(pointer interface{}, where ...interface{}) error {
+func (d *CheckinDetailDao) Struct(pointer interface{}, where ...interface{}) error {
 	return d.M.Struct(pointer, where...)
 }
 
@@ -340,7 +334,7 @@ func (d *LabDao) Struct(pointer interface{}, where ...interface{}) error {
 //
 // users := ([]*User)(nil)
 // err   := dao.User.Structs(&users)
-func (d *LabDao) Structs(pointer interface{}, where ...interface{}) error {
+func (d *CheckinDetailDao) Structs(pointer interface{}, where ...interface{}) error {
 	return d.M.Structs(pointer, where...)
 }
 
@@ -365,14 +359,14 @@ func (d *LabDao) Structs(pointer interface{}, where ...interface{}) error {
 //
 // users := ([]*User)(nil)
 // err   := dao.User.Scan(&users)
-func (d *LabDao) Scan(pointer interface{}, where ...interface{}) error {
+func (d *CheckinDetailDao) Scan(pointer interface{}, where ...interface{}) error {
 	return d.M.Scan(pointer, where...)
 }
 
 // Chunk iterates the table with given size and callback function.
-func (d *LabDao) Chunk(limit int, callback func(entities []*model.Lab, err error) bool) {
+func (d *CheckinDetailDao) Chunk(limit int, callback func(entities []*model.CheckinDetail, err error) bool) {
 	d.M.Chunk(limit, func(result gdb.Result, err error) bool {
-		var entities []*model.Lab
+		var entities []*model.CheckinDetail
 		err = result.Structs(&entities)
 		if err == sql.ErrNoRows {
 			return false
@@ -382,16 +376,16 @@ func (d *LabDao) Chunk(limit int, callback func(entities []*model.Lab, err error
 }
 
 // LockUpdate sets the lock for update for current operation.
-func (d *LabDao) LockUpdate() *LabDao {
-	return &LabDao{M: d.M.LockUpdate()}
+func (d *CheckinDetailDao) LockUpdate() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.LockUpdate()}
 }
 
 // LockShared sets the lock in share mode for current operation.
-func (d *LabDao) LockShared() *LabDao {
-	return &LabDao{M: d.M.LockShared()}
+func (d *CheckinDetailDao) LockShared() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.LockShared()}
 }
 
 // Unscoped enables/disables the soft deleting feature.
-func (d *LabDao) Unscoped() *LabDao {
-	return &LabDao{M: d.M.Unscoped()}
+func (d *CheckinDetailDao) Unscoped() *CheckinDetailDao {
+	return &CheckinDetailDao{M: d.M.Unscoped()}
 }

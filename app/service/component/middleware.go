@@ -4,17 +4,13 @@
 package component
 
 import (
-	"github.com/casbin/casbin/v2"
 	"github.com/gogf/gf/net/ghttp"
-	"net/http"
 )
 
 // 中间件管理服务
 var Middleware = new(serviceMiddleware)
 
-type serviceMiddleware struct {
-	enforcer *casbin.Enforcer
-}
+type serviceMiddleware struct{}
 
 // CORS 跨域中间件
 // @receiver s
@@ -23,18 +19,4 @@ type serviceMiddleware struct {
 func (s *serviceMiddleware) CORS(r *ghttp.Request) {
 	r.Response.CORSDefault()
 	r.Middleware.Next()
-}
-
-// Ctx 上下文中间件
-// @receiver s
-// @params r
-// @date 2021-01-04 21:52:04
-func (s *serviceMiddleware) Ctx(r *ghttp.Request) {
-	token := r.Get("token")
-	if token == "123456" {
-		r.Response.Writeln("auth")
-		r.Middleware.Next()
-	} else {
-		r.Response.WriteStatus(http.StatusForbidden)
-	}
 }

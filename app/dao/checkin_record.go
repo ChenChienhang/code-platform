@@ -8,17 +8,17 @@ import (
 	"code-platform/app/dao/internal"
 )
 
-// signInCourseDao is the manager for logic model data accessing
+// checkinRecordDao is the manager for logic model data accessing
 // and custom defined data operations functions management. You can define
 // methods on it to extend its functionality as you wish.
-type signInCourseDao struct {
-	*internal.SignInCourseDao
+type checkinRecordDao struct {
+	*internal.CheckinRecordDao
 }
 
 var (
-	// SignInCourse is globally public accessible object for table signIn_course operations.
-	SignInCourse = &signInCourseDao{
-		internal.SignInCourse,
+	// CheckinRecord is globally public accessible object for table checkin_record operations.
+	CheckinRecord = &checkinRecordDao{
+		internal.CheckinRecord,
 	}
 )
 

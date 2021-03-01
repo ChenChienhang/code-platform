@@ -8,17 +8,17 @@ import (
 	"code-platform/app/dao/internal"
 )
 
-// sysUserDao is the manager for logic model data accessing
+// checkinDetailDao is the manager for logic model data accessing
 // and custom defined data operations functions management. You can define
 // methods on it to extend its functionality as you wish.
-type sysUserDao struct {
-	*internal.SysUserDao
+type checkinDetailDao struct {
+	*internal.CheckinDetailDao
 }
 
 var (
-	// SysUser is globally public accessible object for table sys_user operations.
-	SysUser = &sysUserDao{
-		internal.SysUser,
+	// CheckinDetail is globally public accessible object for table checkin_detail operations.
+	CheckinDetail = &checkinDetailDao{
+		internal.CheckinDetail,
 	}
 )
 

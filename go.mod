@@ -1,8 +1,11 @@
 module code-platform
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize/v2 v2.0.0
 	github.com/casbin/casbin/v2 v2.19.8
 	github.com/disintegration/imaging v1.6.2
+	github.com/go-redis/redis/v8 v8.6.0
+	github.com/go-redsync/redsync/v4 v4.0.4
 	github.com/goflyfox/gtoken v1.4.1
 	github.com/gogf/gf v1.15.0
 	github.com/gogf/guuid v1.0.0

@@ -10,15 +10,15 @@ import (
 
 // CourseComment is the golang structure for table course_comment.
 type CourseComment struct {
-	CourseCommentId int         `orm:"course_comment_id,primary" json:"courseCommentId"` // 主键
-	CourseId        int         `orm:"course_id"                 json:"courseId"`        // 实验内容
-	CommentText     string      `orm:"comment_text"              json:"commentText"`     // 评论内容
-	Pid             int         `orm:"pid"                       json:"pid"`             // 父评论id，主评时为空
-	UserId          int         `orm:"user_id"                   json:"userId"`          // 发评论的用户id
-	Username        string      `orm:"username"                  json:"username"`        // 回复者的用户名
-	ReplyUsername   string      `orm:"reply_username"            json:"replyUsername"`   // 被回复者的用户名
-	ReplyId         int         `orm:"reply_id"                  json:"replyId"`         // 回复的评论id
-	CreatedAt       *gtime.Time `orm:"created_at"                json:"createdAt"`       // 创建时间
-	UpdatedAt       *gtime.Time `orm:"updated_at"                json:"updatedAt"`       // 更新时间
-	DeletedAt       *gtime.Time `orm:"deleted_at"                json:"deletedAt"`       // 删除时间
+	CourseCommentId int         `orm:"course_comment_id,primary" json:"course_comment_id"` // 主键
+	CourseId        int         `orm:"course_id"                 json:"course_id"`         // 实验内容
+	CommentText     string      `orm:"comment_text"              json:"comment_text"`      // 评论内容，限120字
+	Pid             int         `orm:"pid"                       json:"pid"`               // 父评论id，主评时为空
+	UserId          int         `orm:"user_id"                   json:"user_id"`           // 发评论的用户id
+	Username        string      `orm:"username"                  json:"username"`          // 回复者的用户名
+	ReplyUsername   string      `orm:"reply_username"            json:"reply_username"`    // 被回复者的用户名
+	ReplyId         int         `orm:"reply_id"                  json:"reply_id"`          // 回复的评论id
+	CreatedAt       *gtime.Time `orm:"created_at"                json:"created_at"`        // 创建时间
+	UpdatedAt       *gtime.Time `orm:"updated_at"                json:"updated_at"`        // 更新时间
+	DeletedAt       *gtime.Time `orm:"deleted_at"                json:"deleted_at"`        // 删除时间
 }

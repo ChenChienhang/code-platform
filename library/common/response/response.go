@@ -4,7 +4,6 @@
 package response
 
 import (
-	code2 "code-platform/library/common/code"
 	"github.com/gogf/gf/errors/gerror"
 	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/glog"
@@ -25,11 +24,11 @@ type PageInfo struct {
 	Pages   int `json:"pages"`   // 总共页码
 }
 
-// Success 成功返回结果集
+// Succ 成功返回结果集
 // @params r
 // @params data
 // @date 2021-01-04 22:16:50
-func Success(r *ghttp.Request, data ...interface{}) {
+func Succ(r *ghttp.Request, data ...interface{}) {
 	var responseData = interface{}(nil)
 	if len(data) > 0 {
 		responseData = data[0]
@@ -54,9 +53,6 @@ func Exit(r *ghttp.Request, err error) {
 	//打印错误日志
 	glog.Errorf("[url:%s][err:%s]",
 		r.URL.Path, err.Error())
-	if code := gerror.Code(err); code == -1 {
-		err = code2.OtherError
-	}
 	// 封装错误信息,返回给前端
 	_ = r.Response.WriteJson(
 		JsonResponse{
@@ -68,14 +64,14 @@ func Exit(r *ghttp.Request, err error) {
 	r.Exit()
 }
 
-func GetPageReq(r *ghttp.Request) (int, int) {
-	current := r.GetInt("pageCurrent")
-	if current <= 0 {
-		current = 1
-	}
-	size := r.GetInt("pageSize")
-	if size <= 0 {
-		size = 10
-	}
-	return current, size
-}
+//func GetPageReq(r *ghttp.Request) (int, int) {
+//	current := r.GetInt("pageCurrent")
+//	if current <= 0 {
+//		current = 1
+//	}
+//	size := r.GetInt("pageSize")
+//	if size <= 0 {
+//		size = 10
+//	}
+//	return current, size
+//}

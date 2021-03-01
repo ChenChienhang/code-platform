@@ -11,39 +11,35 @@ import (
 	"code-platform/library/common/response"
 	"code-platform/library/common/utils"
 	"fmt"
-	"github.com/gogf/gf/errors/gerror"
 	"github.com/gogf/gf/frame/g"
-	"github.com/gogf/gf/os/glog"
 	"github.com/gogf/gf/os/gtime"
-	"github.com/gogf/gf/util/gconv"
 	"github.com/gogf/gf/util/grand"
 	"golang.org/x/crypto/bcrypt"
 	"math"
-	"mime/multipart"
 	"time"
 )
 
 type role int
 
 const (
-	student role = 1
-	teacher      = iota
+	Teacher role = 1 + iota
+	Student
 )
 
 var (
-	UserService = new(userService)
-	//存放验证码的key头部
-	redisVerCodeHeader = "verification_code_"
+	UserService        = new(userService)
+	redisVerCodeHeader = "code.platform:verification.code:"
 )
 
-type userService struct{}
+type userService struct {
+}
 
 // SignUpForStu 注册
 // @receiver s
 // @params req
 // @return error
 // @date 2021-01-09 00:15:22
-func (s *userService) SignUpForStu(req *model.RegisterReq) error {
+func (s *userService) SignUpForStu(req *model.SignUpReq) error {
 	// 校验验证码
 	if err := s.checkVerificationCode(req.Email, req.VerificationCode); err != nil {
 		return err
@@ -54,27 +50,21 @@ func (s *userService) SignUpForStu(req *model.RegisterReq) error {
 	if err != nil {
 		return err
 	}
-
-	//转换类型
-	insertModel := &model.SysUser{}
-	if err = gconv.Struct(req, insertModel); err != nil {
-		return err
-	}
-
 	//存入加密后的密码
-	insertModel.Password = string(hashPassword)
-	if _, err = dao.SysUser.OmitEmpty().Insert(insertModel); err != nil {
+	req.Password = string(hashPassword)
+	// 保存
+	if _, err = dao.SysUser.OmitEmpty().Insert(req); err != nil {
 		return err
 	}
 	// 把id查出来
-	userId, err := dao.SysUser.Where(dao.SysUser.Columns.Email, insertModel.Email).
-		FindValue(dao.SysUser.Columns.UserId)
-	if err != nil {
+	if userId, err := dao.SysUser.Where(dao.SysUser.Columns.Email, req.Email).
+		FindValue(dao.SysUser.Columns.UserId); err != nil {
 		return err
-	}
-	// 加入casbin权限
-	if err = addGroupPolicy(student, userId.Int()); err != nil {
-		return err
+	} else {
+		// 加入casbin权限
+		if err = addGroupPolicy(Student, userId.Int()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -84,7 +74,7 @@ func (s *userService) SignUpForStu(req *model.RegisterReq) error {
 // @params req
 // @return error
 // @date 2021-01-09 00:15:22
-func (s *userService) SignUpForTeacher(req *model.RegisterReq) error {
+func (s *userService) SignUpForTeacher(req *model.SignUpReq) error {
 	// 校验验证码,不用校验验证码
 
 	// 密码加密
@@ -93,26 +83,20 @@ func (s *userService) SignUpForTeacher(req *model.RegisterReq) error {
 		return err
 	}
 
-	//转换类型
-	insertModel := &model.SysUser{}
-	if err = gconv.Struct(req, insertModel); err != nil {
-		return err
-	}
-
 	//存入加密后的密码
-	insertModel.Password = string(hashPassword)
-	if _, err = dao.SysUser.OmitEmpty().Insert(insertModel); err != nil {
+	req.Password = string(hashPassword)
+	if _, err = dao.SysUser.OmitEmpty().Insert(req); err != nil {
 		return err
 	}
 	// 把id查出来
-	userId, err := dao.SysUser.
-		Where(dao.SysUser.Columns.Email, insertModel.Email).
-		FindValue(dao.SysUser.Columns.UserId)
-	if err != nil {
+	if userId, err := dao.SysUser.
+		Where(dao.SysUser.Columns.Email, req.Email).
+		FindValue(dao.SysUser.Columns.UserId); err != nil {
 		return err
-	}
-	if err = addGroupPolicy(teacher, userId.Int()); err != nil {
-		return err
+	} else {
+		if err = addGroupPolicy(Teacher, userId.Int()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -124,9 +108,9 @@ func (s *userService) SignUpForTeacher(req *model.RegisterReq) error {
 // @date 2021-01-10 00:07:55
 func (s *userService) Update(req *model.UserUpdateReq) error {
 	// 如果修改了密码，需要进行密码校验
-	if req.Password != "" {
+	if req.Password != nil {
 		// 在数据库校验用户
-		password, err := dao.SysUser.Where(dao.SysUser.Columns.Email).FindValue(dao.SysUser.Columns.Password)
+		password, err := dao.SysUser.WherePri(req.UserId).FindValue(dao.SysUser.Columns.Password)
 		if err != nil {
 			return err
 		}
@@ -136,23 +120,41 @@ func (s *userService) Update(req *model.UserUpdateReq) error {
 		}
 
 		//校验密码 密码错误
-		if err = bcrypt.CompareHashAndPassword(password.Bytes(), []byte(req.OldPassword)); err != nil {
+		if err = bcrypt.CompareHashAndPassword(password.Bytes(), []byte(*req.OldPassword)); err != nil {
 			return code.PasswordError
 		}
 	}
 	// 修改了昵称，检查昵称唯一性
-	if req.NickName != "" {
+	if req.NickName != nil {
 		v, err := dao.SysUser.Where(dao.SysUser.Columns.NickName, req.NickName).FindValue(dao.SysUser.Columns.UserId)
 		if err != nil {
 			return err
 		}
 		// 如果其他人已经使用了该昵称
 		if !v.IsEmpty() || v.Int() != req.UserId {
-			return gerror.NewCode(10000, "昵称已存在，请考虑更换其他昵称")
+			return code.NickNameError
+		}
+	}
+	// 修改了头像
+	removeFlag := false
+	if req.AvatarUrl != nil {
+		// 保存旧头像url
+		if oldPicUrl, err := dao.SysUser.WherePri(req.UserId).FindValue(dao.SysUser.Columns.AvatarUrl); err != nil {
+			return err
+		} else if !oldPicUrl.IsEmpty() {
+			removeFlag = true
+			defer func(flag *bool) {
+				if *flag {
+					go FileService.RemoveDirtyFile(*req.AvatarUrl)
+					//goland:noinspection GoUnhandledErrorResult
+					go FileService.RemoveObject(oldPicUrl.String())
+				}
+			}(&removeFlag)
 		}
 	}
 	// 保存
-	if _, err := dao.SysUser.OmitEmpty().Save(req); err != nil {
+	if _, err := dao.SysUser.Save(req); err != nil {
+		removeFlag = false
 		return err
 	}
 	return nil
@@ -179,15 +181,46 @@ func (s *userService) SendVerificationCode(emailAddr string) error {
 	}
 
 	// 准备邮件内容
-	emailBody := fmt.Sprintf(response.VerificationCodeEmailBody, verificationCode, gtime.Date())
-
+	emailBody := fmt.Sprintf(`<div style="background-color:#ECECEC; padding: 35px;">
+    <table cellpadding="0" align="center"
+           style="width: 600px; margin: 0px auto; text-align: left; position: relative; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; font-size: 14px; font-family:微软雅黑, 黑体; line-height: 1.5; box-shadow: rgb(153, 153, 153) 0px 0px 5px; border-collapse: collapse; background-position: initial initial; background-repeat: initial initial;background:#fff;">
+        <tbody>
+        <tr>
+            <th valign="middle"
+                style="height: 25px; line-height: 25px; padding: 15px 35px; border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: #42a3d3; background-color: #49bcff; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 0px; border-bottom-left-radius: 0px;">
+                <font face="微软雅黑" size="5" style="color: rgb(255, 255, 255); ">注册成功! （阿里云）</font>
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <div style="padding:25px 35px 40px; background-color:#fff;">
+                    <h2 style="margin: 5px 0px; ">
+                        <font color="#333333" style="line-height: 20px; ">
+                            <font style="line-height: 22px; " size="4">
+                                亲爱的 123456</font>
+                        </font>
+                    </h2>
+                    <p>首先感谢您使用本站！这是您的验证码：%s<br>
+                    <p align="right">%s</p>
+                    <div style="width:700px;margin:0 auto;">
+                        <div style="padding:10px 10px 0;border-top:1px solid #ccc;color:#747474;margin-bottom:20px;line-height:1.3em;font-size:12px;">
+                            <p>此为系统邮件，请勿回复<br>
+                                请保管好您的邮箱，避免账号被他人盗用
+                            </p>
+                            <p>©***</p>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+`, verificationCode, gtime.Datetime())
 	// 开一个协程发送邮件
-	go func(email string, subject string, emailBody string) {
-		if err := utils.SendMail(email, subject, emailBody); err != nil {
-			glog.Errorf("发送注册邮件失败:%s", err.Error())
-		}
-	}(emailAddr, "实验系统邮件验证码", emailBody)
-
+	go func() {
+		_ = utils.MailUtil.SendMail(emailAddr, "实验系统邮件验证码", emailBody)
+	}()
 	return nil
 }
 
@@ -254,17 +287,14 @@ func (s *userService) DeletedUser(req *model.DeletedUserReq) error {
 	if one == nil {
 		return code.UserNotExistError
 	}
-
 	// 校验验证码
 	if err = s.checkVerificationCode(one.Email, req.VerificationCode); err != nil {
 		return err
 	}
-
 	// 校验密码
 	if err = bcrypt.CompareHashAndPassword([]byte(one.Password), []byte(req.Password)); err != nil {
 		return code.PasswordError
 	}
-
 	// 执行删除
 	if _, err = dao.SysUser.Delete(req.UserId); err != nil {
 		return err
@@ -272,19 +302,19 @@ func (s *userService) DeletedUser(req *model.DeletedUserReq) error {
 	return nil
 }
 
-// ListPage 分页查询所有用户
+// ListUser 分页查询所有用户
 // @receiver s
 // @params current 当前页
 // @params size 页面大小
 // @return *model.SysUserPageResp
 // @return error
 // @date 2021-01-15 00:02:22
-func (s *userService) ListPage(current, size int) (*model.SysUserPageResp, error) {
+func (s *userService) ListUser(current, size int) (*model.SysUserPageResp, error) {
 	d := dao.SysUser.Page(current, size).
 		FieldsEx(dao.SysUser.Columns.Password, dao.LabComment.Columns.DeletedAt)
 
-	all, err := d.FindAll()
-	if err != nil {
+	all := make([]*model.SysUserResp, 0)
+	if err := d.Scan(&all); err != nil {
 		return nil, err
 	}
 
@@ -305,52 +335,33 @@ func (s *userService) ListPage(current, size int) (*model.SysUserPageResp, error
 	return resp, nil
 }
 
-func (s *userService) ListStuPage(current, size int) (*model.SysUserPageResp, error) {
-	d := dao.SysUser.Page(current, size).
-		FieldsEx(dao.SysUser.Columns.Password, dao.LabComment.Columns.DeletedAt)
-
-	all, err := d.FindAll()
-	if err != nil {
-		return nil, err
-	}
-
-	count, err := d.Count()
-	if err != nil {
-		return nil, err
-	}
-
-	// 分页信息整合
-	resp := &model.SysUserPageResp{
-		Records: all,
-		PageInfo: &response.PageInfo{
-			Size:    len(all),
-			Total:   count,
-			Current: current,
-			Pages:   int(math.Ceil(float64(count) / float64(size))),
-		}}
-	return resp, nil
-}
-
-// UploadAvatar 上传头像
-// @receiver s
-// @params userId 用户id
-// @params file 头像文件
-// @return error
-// @date 2021-02-06 12:09:26
-func (s *userService) UploadAvatar(userId int, file multipart.File) error {
-	avatarUrl, err := component.MinioUtil.UploadAvatar(file)
-	if err != nil {
-		return err
-	}
-	// 把头像保存
-	if _, err = dao.SysUser.WherePri(userId).Data(dao.SysUser.Columns.Avatar, avatarUrl).Save(); err != nil {
-		return err
-	}
-	return nil
-}
-
-//func (s *userService) isStuInfoCompletable(userId int) (bool, error) {
+//func (s *userService) ListStuPage(current, size int) (*model.SysUserPageResp, error) {
+//	d := dao.SysUser.Page(current, size).
+//		FieldsEx(dao.SysUser.Columns.Password, dao.LabComment.Columns.DeletedAt)
 //
+//	all, err := d.FindAll()
+//	if err != nil {
+//		return nil, err
+//	}
+//	if all == nil {
+//		all = make([]*model.SysUser, 0)
+//	}
+//
+//	count, err := d.Count()
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	// 分页信息整合
+//	resp := &model.SysUserPageResp{
+//		Records: all,
+//		PageInfo: &response.PageInfo{
+//			Size:    len(all),
+//			Total:   count,
+//			Current: current,
+//			Pages:   int(math.Ceil(float64(count) / float64(size))),
+//		}}
+//	return resp, nil
 //}
 
 // AddPolicy 添加新用户授权policy

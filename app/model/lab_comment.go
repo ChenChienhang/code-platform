@@ -7,6 +7,7 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
+	"github.com/gogf/gf/os/gtime"
 )
 
 // LabComment is the golang structure for table lab_comment.
@@ -14,13 +15,40 @@ type LabComment internal.LabComment
 
 // Fill with you ideas below.
 
-type LabCommentEntity struct {
-	Comment       *LabComment   // 评论主体
-	ReplyComments []*LabComment // 子评论
+type LabCommentResp struct {
+	LabCommentId  int         `orm:"lab_comment_id,primary" json:"lab_comment_id"` // 主键
+	LabId         int         `orm:"lab_id"                 json:"lab_id"`         // 实验id
+	CommentText   string      `orm:"comment_text"           json:"comment_text"`   // 评论内容，限120字
+	Pid           int         `orm:"pid"                    json:"pid"`            // 父评论id，主评时为0
+	UserId        int         `orm:"user_id"                json:"user_id"`        // 发评论的用户id
+	Username      string      `orm:"username"               json:"username"`       // 被回复的用户名称
+	ReplyId       int         `orm:"reply_id"               json:"reply_id"`       // 被回复的用户id
+	ReplyUsername string      `orm:"reply_username"         json:"reply_username"` // 被回复的用户名称
+	CreatedAt     *gtime.Time `orm:"created_at"             json:"created_at"`     // 创建时间
+	UpdatedAt     *gtime.Time `orm:"updated_at"             json:"updated_at"`     // 更新时间
 }
 
-// CourseCommentEntityResp 返回集
-type LabCommentEntityResp struct {
-	Records  []*LabCommentEntity
-	PageInfo *response.PageInfo // 页面信息
+type LabCommentEntity struct {
+	Comment       *LabCommentResp `json:"comment"`        // 评论主体
+	ReplyComments []*LabComment   `json:"reply_comments"` // 子评论
+}
+
+// LabCommentEntityPageResp 返回集
+type LabCommentEntityPageResp struct {
+	Records  []*LabCommentEntity `json:"records"`
+	PageInfo *response.PageInfo  `json:"page_info"` // 页面信息
+}
+
+type InsertLabCommentReq struct {
+	LabId       int    // 实验id
+	CommentText string // 评论内容
+	Pid         int    // 父评论id，主评时为0
+	UserId      int    // 发评论的用户id
+	ReplyId     int    // 被回复的用户id
+}
+
+type ListLabCommentReq struct {
+	PageCurrent int // 页码
+	PageSize    int // 页面大小
+	LabId       int // 课程id
 }

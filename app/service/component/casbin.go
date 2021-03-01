@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var Enforcer *casbin.Enforcer = initCasbin()
+var Enforcer = initCasbin()
 
 func initCasbin() (e *casbin.Enforcer) {
 	// 创建适配器

@@ -26,15 +26,15 @@ type SysUserDao struct {
 // SysUserColumns defines and stores column names for table sys_user.
 type sysUserColumns struct {
 	UserId       string // 主键
-	Email        string // 邮箱
-	Num          string // 学号/职工号
-	NickName     string // 昵称
-	RealName     string // 真实姓名
+	Email        string // 邮箱，限30字
+	Num          string // 学号/职工号，限20位
+	NickName     string // 昵称，限6字
+	RealName     string // 真实姓名，限6字
 	Password     string // 密码
-	AvatarUrl    string // 头像
+	AvatarUrl    string // 头像url
 	Gender       string // 性别
-	Major        string // 专业
-	Organization string // 单位
+	Major        string // 专业，限15字
+	Organization string // 单位，例如计算机学院，限15字
 	UpdatedAt    string // 修改时间
 	CreatedAt    string // 创建时间
 	DeletedAt    string // 删除时间

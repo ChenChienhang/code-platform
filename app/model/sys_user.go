@@ -7,6 +7,7 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
+	"github.com/gogf/gf/os/gtime"
 )
 
 // SysUser is the golang structure for table sys_user.
@@ -14,23 +15,37 @@ type SysUser internal.SysUser
 
 // Fill with you ideas below.
 
+type SysUserResp struct {
+	UserId       int         `orm:"user_id,primary" json:"user_id"`       // 主键
+	Email        string      `orm:"email,unique"     json:"email"`        // 邮箱，限30字
+	Num          *string     `orm:"num"              json:"num"`          // 学号/职工号，限20位
+	NickName     string      `orm:"nick_name,unique" json:"nick_name"`    // 昵称，限6字
+	RealName     *string     `orm:"real_name"        json:"real_name"`    // 真实姓名，限6字
+	AvatarUrl    string      `orm:"avatar_url"       json:"avatar_url"`   // 头像url
+	Gender       *int        `orm:"gender"           json:"gender"`       // 性别
+	Major        *string     `orm:"major"            json:"major"`        // 专业，限15字
+	Organization *string     `orm:"organization"     json:"organization"` // 单位，例如计算机学院，限15字
+	UpdatedAt    *gtime.Time `orm:"updated_at"       json:"updated_at"`   // 修改时间
+	CreatedAt    *gtime.Time `orm:"created_at"       json:"created_at"`   // 创建时间
+}
+
 type SysUserPageResp struct {
-	Records  []*SysUser
-	PageInfo *response.PageInfo
+	Records  []*SysUserResp     `json:"records"`
+	PageInfo *response.PageInfo `json:"page_info"`
 }
 
 // 注册请求注册参数
 type SignUpReq struct {
-	Email            string // 邮箱
-	NickName         string // 昵称
-	RealName         string // 真实姓名
-	AvatarUrl        string // 头像url
-	Num              string // 学号
-	Gender           int    // 性别
-	Password         string // 密码
-	Major            string // 专业
-	Organization     string // 单位
-	VerificationCode string // 验证码
+	Email            string  // 邮箱
+	NickName         string  // 昵称
+	RealName         *string // 真实姓名
+	AvatarUrl        *string // 头像url
+	Num              *string // 学号
+	Gender           *int    // 性别
+	Password         string  // 密码
+	Major            *string // 专业
+	Organization     *string // 单位
+	VerificationCode string  // 验证码
 }
 
 // 登录请求参数
@@ -41,16 +56,16 @@ type LoginReq struct {
 
 // 修改请求参数
 type UserUpdateReq struct {
-	UserId       int    // 主键
-	NickName     string // 昵称
-	RealName     string // 真实姓名
-	Num          string // 学号
-	AvatarUrl    string // 头像url
-	OldPassword  string // 旧密码
-	Password     string // 新密码
-	Gender       int    // 性别
-	Major        string // 专业
-	Organization string // 单位
+	UserId       int     // 主键
+	NickName     *string // 昵称
+	RealName     *string // 真实姓名
+	Num          *string // 学号
+	AvatarUrl    *string // 头像url
+	OldPassword  *string // 旧密码
+	Password     *string // 新密码
+	Gender       *int    // 性别
+	Major        *string // 专业
+	Organization *string // 单位
 }
 
 // 重置密码请求注册参数

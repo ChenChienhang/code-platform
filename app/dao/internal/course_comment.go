@@ -27,7 +27,7 @@ type CourseCommentDao struct {
 type courseCommentColumns struct {
 	CourseCommentId string // 主键
 	CourseId        string // 实验内容
-	CommentText     string // 评论内容
+	CommentText     string // 评论内容，限120字
 	Pid             string // 父评论id，主评时为空
 	UserId          string // 发评论的用户id
 	Username        string // 回复者的用户名

@@ -41,7 +41,7 @@ var GfToken = &gtoken.GfToken{
 // @date 2021-01-04 22:14:32
 func LogoutAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	if respData.Success() {
-		response.Success(r)
+		response.Succ(r)
 	} else {
 		response.Exit(r, code.LoginError)
 	}
@@ -55,17 +55,15 @@ func AuthAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	//存在令牌
 	if respData.Success() {
 		// 鉴权
-		isAuth, err := authenticate(respData.GetString("userKey"), r.URL.Path, r.Method)
-		//其他错误
-		if err != nil {
+		if isAuth, err := authenticate(respData.GetString("userKey"), r.URL.Path, r.Method); err != nil {
 			response.Exit(r, code.OtherError)
-		}
-		if !isAuth {
+		} else if !isAuth {
 			// 权限不足
 			response.Exit(r, code.PermissionError)
 		}
+		// 鉴权成功
+		r.SetCtxVar(dao.SysUser.Columns.UserId, respData.GetString("userKey"))
 		r.Middleware.Next()
-
 		//不存在令牌
 	} else {
 		var params map[string]interface{}
@@ -84,9 +82,9 @@ func AuthAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	}
 }
 
-func GetUserId(r *ghttp.Request) int {
-	return GfToken.GetTokenData(r).GetInt("userKey")
-}
+//func GetUserId(r *ghttp.Request) int {
+//	return GfToken.GetTokenData(r).GetInt("userKey")
+//}
 
 // authenticate 鉴权方法
 // @params userId
@@ -118,7 +116,6 @@ func LoginBeforeFunc(r *ghttp.Request) (string, interface{}) {
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-
 	// 在数据库查询用户是否存在(只查出密码,id）
 	one, err := dao.SysUser.Fields(dao.SysUser.Columns.Password, dao.SysUser.Columns.UserId).
 		FindOne(dao.SysUser.Columns.Email, req.Username)
@@ -149,8 +146,6 @@ func LoginAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 		response.Exit(r, code.LoginError)
 	} else {
 		// 返回token
-		response.Success(r, g.Map{
-			"token": respData.GetString("token"),
-		})
+		response.Succ(r, g.Map{"token": respData.GetString("token")})
 	}
 }

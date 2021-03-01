@@ -10,13 +10,13 @@ import (
 
 // Lab is the golang structure for table lab.
 type Lab struct {
-	LabId         int         `orm:"lab_id,primary" json:"labId"`         // 主键
-	CourseId      int         `orm:"course_id"      json:"courseId"`      // 该实验隶属的课程
-	Title         string      `orm:"title"          json:"title"`         //
-	Description   string      `orm:"description"    json:"description"`   // 实验内容简介
-	AttachmentUrl string      `orm:"attachment_url" json:"attachmentUrl"` // 实验附件url,只支持zip
-	DeadLine      *gtime.Time `orm:"dead_line"      json:"deadLine"`      // 截止时间
-	CreatedAt     *gtime.Time `orm:"created_at"     json:"createdAt"`     // 创建时间
-	UpdatedAt     *gtime.Time `orm:"updated_at"     json:"updatedAt"`     // 修改时间
-	DeletedAt     *gtime.Time `orm:"deleted_at"     json:"deletedAt"`     // 删除标志
+	LabId         int         `orm:"lab_id,primary" json:"lab_id"`         // 主键
+	CourseId      int         `orm:"course_id"      json:"course_id"`      // 该实验隶属的课程
+	Title         string      `orm:"title"          json:"title"`          // 标题
+	Description   string      `orm:"description"    json:"description"`    // 实验内容描述，无字数限制
+	AttachmentUrl string      `orm:"attachment_url" json:"attachment_url"` // 实验附件url
+	DeadLine      *gtime.Time `orm:"dead_line"      json:"dead_line"`      // 截止时间
+	CreatedAt     *gtime.Time `orm:"created_at"     json:"created_at"`     // 创建时间
+	UpdatedAt     *gtime.Time `orm:"updated_at"     json:"updated_at"`     // 修改时间
+	DeletedAt     *gtime.Time `orm:"deleted_at"     json:"deleted_at"`     // 删除标志
 }

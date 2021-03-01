@@ -7,7 +7,6 @@ import (
 	"code-platform/app/dao"
 	"code-platform/app/model"
 	"code-platform/app/service"
-	"code-platform/app/service/component"
 	"code-platform/library/common/response"
 	"github.com/gogf/gf/net/ghttp"
 )
@@ -22,36 +21,36 @@ type sysUserController struct{}
 // @date 2021-01-14 00:06:43
 func (c *sysUserController) StuSignUp(r *ghttp.Request) {
 	//入参
-	var sysUser *model.RegisterReq
-	if err := r.Parse(&sysUser); err != nil {
+	var req *model.SignUpReq
+	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
 	// 服务层处理
-	if err := service.UserService.SignUpForStu(sysUser); err != nil {
+	if err := service.UserService.SignUpForStu(req); err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, true)
+	response.Succ(r, true)
 }
 
-// GetOneById 根据id查询用户信息
+// GetOne 根据id查询用户信息
 // @receiver c
 // @params r
 // @date 2021-01-14 00:10:04
-func (c *sysUserController) GetOneById(r *ghttp.Request) {
+func (c *sysUserController) GetOne(r *ghttp.Request) {
 	userId := r.GetInt("userId")
 	// 不传默认从token取
 	if userId == 0 {
-		userId = component.GetUserId(r)
+		userId = r.GetVar(dao.SysUser.Columns.UserId).Int()
 	}
 	// 字段脱敏
-	one, err := dao.SysUser.FieldsEx(
+	resp := new(model.SysUserResp)
+	if err := dao.SysUser.FieldsEx(
 		dao.SysUser.Columns.DeletedAt,
 		dao.SysUser.Columns.Password,
-	).WherePri(userId).FindOne()
-	if err != nil {
+	).WherePri(userId).Scan(&resp); err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, one)
+	response.Succ(r, resp)
 }
 
 // IsNicknameAccessible 昵称唯一性检查
@@ -64,7 +63,7 @@ func (c *sysUserController) IsNicknameAccessible(r *ghttp.Request) {
 	if err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, v.IsEmpty())
+	response.Succ(r, v.IsEmpty())
 }
 
 // isEmailAccessible 邮箱唯一性检查
@@ -77,7 +76,7 @@ func (c *sysUserController) IsEmailAccessible(r *ghttp.Request) {
 	if err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, v.IsEmpty())
+	response.Succ(r, v.IsEmpty())
 }
 
 // SendVerificationCode 获取验证码
@@ -86,11 +85,10 @@ func (c *sysUserController) IsEmailAccessible(r *ghttp.Request) {
 // @date 2021-01-14 00:07:38
 func (c *sysUserController) SendVerificationCode(r *ghttp.Request) {
 	emailAddr := r.GetString("email")
-
 	if err := service.UserService.SendVerificationCode(emailAddr); err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, true)
+	response.Succ(r, true)
 }
 
 // ResetPassword 重置密码，在之前需要进行邮箱验证码发送
@@ -106,7 +104,7 @@ func (c *sysUserController) ResetPassword(r *ghttp.Request) {
 	if err := service.UserService.ResetPassword(req); err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, true)
+	response.Succ(r, true)
 }
 
 // UpdateById 修改信息
@@ -117,12 +115,12 @@ func (c *sysUserController) UpdateById(r *ghttp.Request) {
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.UserId = component.GetUserId(r)
+	req.UserId = r.GetVar(dao.SysUser.Columns.UserId).Int()
 
 	if err := service.UserService.Update(req); err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, true)
+	response.Succ(r, true)
 }
 
 // DeleteById 注销用户
@@ -134,58 +132,24 @@ func (c *sysUserController) DeleteById(r *ghttp.Request) {
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.UserId = component.GetUserId(r)
+	req.UserId = r.GetVar(dao.SysUser.Columns.UserId).Int()
 
 	if err := service.UserService.DeletedUser(req); err != nil {
 		response.Exit(r, err)
 	}
-	response.Success(r, true)
+	response.Succ(r, true)
 }
 
-// ListUserPage 分页查询所有用户
+// ListUser 分页查询所有用户
 // @receiver c
 // @params r
 // @date 2021-01-14 12:48:12
-func (c *sysUserController) ListUserPage(r *ghttp.Request) {
-	current, size := response.GetPageReq(r)
-	resp, err := service.UserService.ListPage(current, size)
-
-	if err != nil {
-		response.Exit(r, err)
-	}
-	response.Success(r, resp)
-}
-
-// ListUserPage 分页查询学生用户
-// @receiver c
-// @params r
-// @date 2021-01-14 12:48:12
-func (c *sysUserController) ListStuPage(r *ghttp.Request) {
-	current, size := response.GetPageReq(r)
-	resp, err := service.UserService.ListStuPage(current, size)
-
-	if err != nil {
-		response.Exit(r, err)
-	}
-	response.Success(r, resp)
-}
-
-// UpdateAvatarByUserId 更新头像
-// @receiver c
-// @params r
-// @date 2021-02-06 12:13:58
-func (c *sysUserController) UpdateAvatarByUserId(r *ghttp.Request) {
-	avatar := r.GetUploadFile("avatar")
-	avatarFile, err := avatar.Open()
-	if err != nil {
-		response.Exit(r, err)
-	}
-	defer func() {
-		_ = avatarFile.Close()
-	}()
-	userId := component.GetUserId(r)
-	if err = service.UserService.UploadAvatar(userId, avatarFile); err != nil {
-		response.Exit(r, err)
-	}
-	response.Success(r, true)
+func (c *sysUserController) ListUser(r *ghttp.Request) {
+	//current, size := response.GetPageReq(r)
+	//resp, err := service.UserService.ListUser(current, size)
+	//
+	//if err != nil {
+	//	response.Exit(r, err)
+	//}
+	//response.Succ(r, resp)
 }

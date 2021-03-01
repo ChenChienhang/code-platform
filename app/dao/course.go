@@ -6,6 +6,9 @@ package dao
 
 import (
 	"code-platform/app/dao/internal"
+	"code-platform/app/model"
+	"github.com/gogf/gf/database/gdb"
+	"github.com/gogf/gf/frame/g"
 )
 
 // courseDao is the manager for logic model data accessing
@@ -23,3 +26,102 @@ var (
 )
 
 // Fill with you ideas below.
+
+// ListCourseIdByStuId 根据学生id分页查出所选课程的id
+// @receiver d
+// @params pageCurrent
+// @params pageSize
+// @params courseId
+// @return []gdb.Value
+// @return error
+// @date 2021-02-06 23:03:03
+func (c *courseDao) ListCourseIdByStuId(pageCurrent, pageSize, courseId int) (all []gdb.Value, count int, err error) {
+	d := g.Table("re_course_user").Where("user_id", courseId)
+	all, err = d.Page(pageCurrent, pageSize).FindArray("course_id")
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err = d.Count()
+	if err != nil {
+		return nil, 0, err
+	}
+	return all, count, err
+}
+
+// ListUserIdByCourseId 根据课程id查询userId
+// @receiver d
+// @params pageCurrent
+// @params pageSize
+// @params courseId
+// @return []gdb.Value
+// @return error
+// @date 2021-02-06 23:22:43
+func (c *courseDao) ListUserIdByCourseId(pageCurrent int, pageSize int, courseId int) (all []gdb.Value, count int, err error) {
+	d := g.Table("re_course_user").Where("course_id", courseId)
+	all, err = d.Page(pageCurrent, pageSize).FindArray("user_id")
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err = d.Count()
+	if err != nil {
+		return nil, 0, err
+	}
+	return all, count, err
+}
+
+// AttendCourse 插入选课记录
+// @receiver d
+// @params userId
+// @params courseId
+// @return error
+// @date 2021-02-06 23:22:34
+func (c *courseDao) AttendCourse(stuId int, courseId int) error {
+	if _, err := g.Table("re_course_user").Insert(g.Map{
+		"user_id":   stuId,
+		"course_id": courseId,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteByUserIdAndCourseId 删除学生的某条选课记录
+// @receiver d
+// @params userId
+// @params courseId
+// @return error
+// @date 2021-02-06 22:39:39
+func (c *courseDao) DeleteByUserIdAndCourseId(req *model.DropCourseReq) error {
+	if _, err := g.Table("re_course_user").Where("user_id", req.StudentId).And("course_id", req.CourseId).
+		Delete(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteByCourseId 删除一门课的全部选课记录
+// @receiver d
+// @params userId
+// @params courseId
+// @return error
+// @date 2021-02-06 22:39:39
+func (c *courseDao) DeleteByCourseId(courseId int) error {
+	if _, err := g.Table("re_course_user").Where("course_id", courseId).Delete(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CountByCourseId 获得选某一门课的人数
+// @receiver d
+// @params courseId
+// @return int
+// @return error
+// @date 2021-02-20 00:07:06
+func (c *courseDao) CountByCourseId(courseId int) (count int, err error) {
+	count, err = g.Table("re_course_user").Where("course_id", courseId).Count()
+	if err != nil {
+		return 0, err
+	}
+	return count, err
+}

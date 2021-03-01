@@ -27,7 +27,7 @@ type LabCommentDao struct {
 type labCommentColumns struct {
 	LabCommentId  string // 主键
 	LabId         string // 实验id
-	CommentText   string // 评论内容
+	CommentText   string // 评论内容，限120字
 	Pid           string // 父评论id，主评时为0
 	UserId        string // 发评论的用户id
 	Username      string // 被回复的用户名称

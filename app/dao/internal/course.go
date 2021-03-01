@@ -27,15 +27,16 @@ type CourseDao struct {
 type courseColumns struct {
 	CourseId    string // 主键
 	TeacherId   string // 教师id
-	TeacherName string //
-	CourseName  string // 课程名称，限长15字
-	CourseDes   string // 课程描述,限两百字
+	TeacherName string // 教师真名
+	CourseName  string // 课程名称，限15字
+	CourseDes   string // 课程描述，限300字
 	PicUrl      string // 封面url
 	SecretKey   string // 加入课程的密码,6位
-	Closed      string // 结课标志
+	IsClose     string // 结课标志
 	CreatedAt   string // 创建时间
 	UpdatedAt   string // 修改时间
 	DeletedAt   string // 删除时间
+	Language    string // 语言类型枚举
 }
 
 var (
@@ -51,10 +52,11 @@ var (
 			CourseDes:   "course_des",
 			PicUrl:      "pic_url",
 			SecretKey:   "secret_key",
-			Closed:      "closed",
+			IsClose:     "is_close",
 			CreatedAt:   "created_at",
 			UpdatedAt:   "updated_at",
 			DeletedAt:   "deleted_at",
+			Language:    "language",
 		},
 	}
 )

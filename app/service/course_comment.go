@@ -8,6 +8,8 @@ import (
 	"code-platform/app/model"
 	"code-platform/library/common/response"
 	"github.com/gogf/gf/database/gdb"
+	"github.com/gogf/gf/frame/g"
+	"github.com/gogf/gf/util/gconv"
 	"math"
 )
 
@@ -15,12 +17,12 @@ var CourseCommentService = new(courseCommentService)
 
 type courseCommentService struct{}
 
-func (s *courseCommentService) ListCourseCommentByCourseId(pageCurrent, pageSize, courseId int) (*model.CourseCommentEntityResp, error) {
+func (s *courseCommentService) ListCourseCommentByCourseId(req *model.ListCourseCommentReq) (*model.CourseCommentEntityPageResp, error) {
 	var comments []*model.CourseCommentEntity
 	// 分页，排序
-	if err := dao.CourseComment.Page(pageCurrent, pageSize).Order(dao.CourseComment.Columns.CreatedAt+" desc").
+	if err := dao.CourseComment.Page(req.PageCurrent, req.PageSize).Order(dao.CourseComment.Columns.CreatedAt+" desc").
 		// 主评，对应课程
-		Where(dao.CourseComment.Columns.Pid, 0).And(dao.CourseComment.Columns.CourseId, courseId).
+		Where(dao.CourseComment.Columns.Pid, 0).And(dao.CourseComment.Columns.CourseId, req.CourseId).
 		FieldsEx(dao.CourseComment.Columns.DeletedAt).
 		ScanList(&comments, "Comment"); err != nil {
 		return nil, err
@@ -45,29 +47,29 @@ func (s *courseCommentService) ListCourseCommentByCourseId(pageCurrent, pageSize
 	// 分页信息
 	count, err := dao.CourseComment.
 		Where(dao.CourseComment.Columns.Pid, 0).
-		Where(dao.CourseComment.Columns.CourseId, courseId).Count()
+		Where(dao.CourseComment.Columns.CourseId, req.CourseId).Count()
 	if err != nil {
 		return nil, err
 	}
 
 	// 分页信息整合
-	resp := &model.CourseCommentEntityResp{
+	resp := &model.CourseCommentEntityPageResp{
 		Records: comments,
 		PageInfo: &response.PageInfo{
 			Size:    len(comments),
 			Total:   count,
-			Current: pageCurrent,
-			Pages:   int(math.Ceil(float64(count) / float64(pageSize))),
+			Current: req.PageCurrent,
+			Pages:   int(math.Ceil(float64(count) / float64(req.PageSize))),
 		}}
 	return resp, nil
 }
 
-func (s *courseCommentService) ListLabCommentByLabId(pageCurrent, pageSize, labId int) (*model.LabCommentEntityResp, error) {
+func (s *courseCommentService) ListLabCommentByLabId(req *model.ListLabCommentReq) (*model.LabCommentEntityPageResp, error) {
 	var comments []*model.LabCommentEntity
 	// 分页，排序
-	if err := dao.LabComment.Page(pageCurrent, pageSize).Order(dao.LabComment.Columns.CreatedAt+" desc").
+	if err := dao.LabComment.Page(req.PageCurrent, req.PageSize).Order(dao.LabComment.Columns.CreatedAt+" desc").
 		// 主评，对应课程
-		Where(dao.LabComment.Columns.Pid, 0).And(dao.LabComment.Columns.LabId, labId).
+		Where(dao.LabComment.Columns.Pid, 0).And(dao.LabComment.Columns.LabId, req.LabId).
 		FieldsEx(dao.LabComment.Columns.DeletedAt).
 		ScanList(&comments, "Comment"); err != nil {
 		return nil, err
@@ -90,56 +92,61 @@ func (s *courseCommentService) ListLabCommentByLabId(pageCurrent, pageSize, labI
 	// 分页信息
 	count, err := dao.LabComment.
 		Where(dao.LabComment.Columns.Pid, 0).
-		Where(dao.LabComment.Columns.LabId, labId).Count()
+		Where(dao.LabComment.Columns.LabId, req.LabId).Count()
 	if err != nil {
 		return nil, err
 	}
 
 	// 分页信息整合
-	resp := &model.LabCommentEntityResp{
+	resp := &model.LabCommentEntityPageResp{
 		Records: comments,
 		PageInfo: &response.PageInfo{
 			Size:    len(comments),
 			Total:   count,
-			Current: pageCurrent,
-			Pages:   int(math.Ceil(float64(count) / float64(pageSize))),
+			Current: req.PageCurrent,
+			Pages:   int(math.Ceil(float64(count) / float64(req.PageSize))),
 		}}
 	return resp, nil
 }
 
 // InsertCourseComment
 // @receiver s
-// @params saveModel
-// @return error
+// @params req
+// @return err
 // @date 2021-01-31 18:29:13
-func (s *courseCommentService) InsertCourseComment(saveModel *model.CourseComment) error {
-	if saveModel.ReplyId != 0 {
+func (s *courseCommentService) InsertCourseComment(req *model.InsertCourseCommentReq) (err error) {
+	// 保存模型
+	var courseComment *model.CourseComment
+	if err = gconv.Struct(req, &courseComment); err != nil {
+		return err
+	}
+	if courseComment.ReplyId != 0 {
 		// 回复别人的评论,要做处理
-		tmp, err := dao.CourseComment.WherePri(saveModel.ReplyId).
-			Fields(dao.CourseComment.Columns.Pid, dao.CourseComment.Columns.UserId).FindOne()
+		tmp, err := dao.CourseComment.WherePri(courseComment.ReplyId).
+			Fields(dao.CourseComment.Columns.Pid, dao.CourseComment.Columns.Username).FindOne()
 		if err != nil {
 			return err
 		}
 		// 回复的是主评,则pid为主评id
 		if tmp.Pid == 0 {
-			saveModel.Pid = saveModel.ReplyId
+			courseComment.Pid = courseComment.ReplyId
 		} else {
 			// 否则，pid与被回复的pid保持一致
-			saveModel.Pid = tmp.Pid
+			courseComment.Pid = tmp.Pid
 		}
 
 		// 被回复的那条评论的用户昵称
-		saveModel.ReplyUsername = tmp.Username
+		courseComment.ReplyUsername = tmp.Username
 	}
 	// 回复评论的用户昵称
-	UserNickname, err := dao.SysUser.WherePri(saveModel.UserId).FindValue(dao.SysUser.Columns.NickName)
-	if err != nil {
+	if UserNickname, err := dao.SysUser.WherePri(courseComment.UserId).FindValue(dao.SysUser.Columns.NickName); err != nil {
 		return err
+	} else {
+		courseComment.Username = UserNickname.String()
 	}
-	saveModel.Username = UserNickname.String()
 
 	// 保存
-	if _, err = dao.CourseComment.Insert(saveModel); err != nil {
+	if _, err = dao.CourseComment.Insert(courseComment); err != nil {
 		return err
 	}
 	return nil
@@ -150,34 +157,56 @@ func (s *courseCommentService) InsertCourseComment(saveModel *model.CourseCommen
 // @params saveModel
 // @return error
 // @date 2021-01-31 18:29:22
-func (s *courseCommentService) InsertLabComment(saveModel *model.LabComment) error {
-	if saveModel.ReplyId != 0 {
+func (s *courseCommentService) InsertLabComment(req *model.InsertLabCommentReq) (err error) {
+	var labComment *model.LabComment
+	if err = gconv.Struct(req, &labComment); err != nil {
+		return err
+	}
+	if labComment.ReplyId != 0 {
 		// 回复别人的评论,要做处理
-		tmp, err := dao.LabComment.WherePri(saveModel.ReplyId).
-			Fields(dao.LabComment.Columns.Pid, dao.LabComment.Columns.UserId).FindOne()
+		replyComment, err := dao.LabComment.WherePri(labComment.ReplyId).
+			Fields(dao.LabComment.Columns.Pid, dao.LabComment.Columns.Username).FindOne()
 		if err != nil {
 			return err
 		}
 		// 回复的是主评,则pid为主评id
-		if tmp.Pid == 0 {
-			saveModel.Pid = saveModel.ReplyId
+		if replyComment.Pid == 0 {
+			labComment.Pid = labComment.ReplyId
 		} else {
 			// 否则，pid与被回复的pid保持一致
-			saveModel.Pid = tmp.Pid
+			labComment.Pid = replyComment.Pid
 		}
-
 		// 被回复的那条评论的用户昵称
-		saveModel.ReplyUsername = tmp.Username
+		labComment.ReplyUsername = replyComment.Username
 	}
 	// 回复评论的用户昵称
-	UserNickname, err := dao.SysUser.WherePri(saveModel.UserId).FindValue(dao.SysUser.Columns.NickName)
-	if err != nil {
+	if UserNickname, err := dao.SysUser.WherePri(labComment.UserId).FindValue(dao.SysUser.Columns.NickName); err != nil {
+		return err
+	} else {
+		labComment.Username = UserNickname.String()
+	}
+	// 保存
+	if _, err = dao.LabComment.Insert(labComment); err != nil {
 		return err
 	}
-	saveModel.Username = UserNickname.String()
+	return nil
+}
 
-	// 保存
-	if _, err = dao.LabComment.Insert(saveModel); err != nil {
+func (s *courseCommentService) DeleteLabComment(commentId int, userId int) (err error) {
+	if _, err = dao.CourseComment.Where(g.Map{
+		dao.LabComment.Columns.LabId:  commentId,
+		dao.LabComment.Columns.UserId: userId,
+	}).Save(dao.LabComment.Columns.CommentText, "该评论已删除"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *courseCommentService) DeleteCourseComment(commentId int, userId int) (err error) {
+	if _, err = dao.CourseComment.Where(g.Map{
+		dao.CourseComment.Columns.CourseId: commentId,
+		dao.CourseComment.Columns.UserId:   userId,
+	}).Save(dao.CourseComment.Columns.CommentText, "该评论已删除"); err != nil {
 		return err
 	}
 	return nil

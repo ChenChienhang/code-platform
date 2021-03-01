@@ -6,9 +6,9 @@ package internal
 
 // LabSubmit is the golang structure for table lab_submit.
 type LabSubmit struct {
-	LabSubmitId   int    `orm:"lab_submit_id,primary" json:"labSubmitId"`   //
-	LabId         int    `orm:"lab_id"                json:"labId"`         // lab id
-	ReportUrl     string `orm:"report_url"            json:"reportUrl"`     // 存放实验报告pdf的url
-	TempReportUrl string `orm:"temp_report_url"       json:"tempReportUrl"` // 暂存实验报告url
-	IsCode        int    `orm:"is_code"               json:"isCode"`        // 代码是否提交
+	LabSubmitId   int    `orm:"lab_submit_id,primary" json:"lab_submit_id"`   //
+	LabId         int    `orm:"lab_id"                json:"lab_id"`          // lab id
+	ReportUrl     string `orm:"report_url"            json:"report_url"`      // 存放实验报告pdf的url
+	TempReportUrl string `orm:"temp_report_url"       json:"temp_report_url"` // 暂存实验报告url
+	IsCode        int    `orm:"is_code"               json:"is_code"`         // 代码是否提交
 }

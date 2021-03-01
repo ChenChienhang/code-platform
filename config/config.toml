@@ -1,69 +1,88 @@
+# 建议不要reformat
 # HTTP Server
 [server]
-	Address     = ":8199"
-	ServerRoot  = "public"
+	Address = ":8199"
+	ServerRoot = "public"
 	ServerAgent = "gf-app"
-	LogPath     = "/tmp/log/gf-app/server"
+	LogPath = "/tmp/log/gf-app/server"
 
 # Logger.
 [logger]
-    Path        = "/tmp/log/gf-app"
-    Level       = "all"
-    Stdout      = true
+    Path = "/tmp/log/gf-app"
+    Level = "all"
+    Stdout = true
 
 # Template.
 [viewer]
-    Path        = "template"
+    Path = "template"
     DefaultFile = "index.html"
     Delimiters  =  ["${", "}"]
 
 # Database.
 [database]
     [[database.default]]
-        type  = "mysql"
-        link  = "root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
+        type = "mysql"
+        link = "root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
         Role =  "master"
         debug = true
     [[database.casbin]]
 
     # Database logger.
     [database.logger]
-        Path   = "/tmp/log/gf-app/sql"
-        Level  = "all"
+        Path = "/tmp/log/gf-app/sql"
+        Level = "all"
         Stdout = true
 
 [redis]
-    default = "118.178.253.239:6379,Redis13229798448?"
+    host = "118.178.253.239"
+    port = "6379"
+    pass = "Redis13229798448?"
 
 [gfcli]
     [[gfcli.gen.dao]]
-        link   = "mysql:root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
+        link = "mysql:root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
         prefix = ""
-        jsonCase = "CamelLower"
-        tables = "signIn_course,lab,lab_comment,course,course_comment,lab_comment,lab_submit,sys_user"
+#        jsonCase = "CamelLower"
+        tables = "course_recourse,checkin_detail,checkin_record,lab,lab_comment,course,course_comment,lab_comment,lab_submit,sys_user"
 [mail]
-#    邮箱
-    user    =   "jankins.chen@foxmail.com"
-    pass    =   "blxuslwkktdvbfbj"
-    host    =   "smtp.qq.com"
-    port    =   "465"
+    # 邮箱
+    user = "jankins.chen@foxmail.com"
+    pass = "blxuslwkktdvbfbj"
+    host = "smtp.qq.com"
+    port = "465"
 
 [minio]
     endpoint = "118.178.253.239:9000"
     accessKeyID = "AKIAIOSFODNN7EXAMPLE"
     secretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-
-[[theiaServer]]
-    host = "118.178.253.239"
-    user = "root"
-    pass = "4125qaswIklo8569"
-    max = 15
-
+    # 存储桶名称
+    [minio.bucketName]
+        picBucketName = "pic"
+        reportBucketName = "report"
+        attachmentBucketName = "attachment"
+        videoBucketName = "video"
 [moss]
     userId = "604014254"
 
-#
-#[[theiaServer]]
-#    host = "118.18.253.239"
-#    user = ""
-#    pass = ""
+[k3s]
+    # theia 地址
+    [k3s.theia]
+        theia-full = "123456"
+        theia-cpp = "123456"
+        theia-java = "123456"
+        theia-python = "123456"
+        theia-go = "123456"
+        theia-web = "123456"
+    # 重新部署
+    [k3s.redeployment]
+        bearToken  = "token-8sr87:2992npm9n9bqcrz8zpnz2n8ttkfjzmssdv9hp79z66vdq8pjnw6hdc"
+        redeploymentUrls = ["https://192.168.1.5/v3/project/c-ctx7j:p-vq9lq/workloads/deployment:lab:ewe?action=redeploy"]
+    # 代码存放
+    [k3s.storage]
+        # 代码存放的主机
+        host = "192.168.1.11"
+        user = "root"
+        pass = "123456"
+        # 代码存放的路径
+        path = "/mnt/theia"
+

@@ -20,9 +20,9 @@ func init() {
 			// 用户注册，学生，已添加
 			group.POST("/signup/stu", api.SysUserController.StuSignUp)
 			// 根据用户id获取信息，所有，已添加
-			group.GET("/:userId", api.SysUserController.GetOneById)
+			group.GET("/:userId", api.SysUserController.GetOne)
 			// 分页获取所有用户信息，未确定
-			group.GET("/list", api.SysUserController.ListUser)
+			group.GET("/all", api.SysUserController.ListUser)
 			// 更新用户信息，所有
 			group.PUT("/", api.SysUserController.UpdateById)
 			// 注销用户,所有
@@ -36,11 +36,19 @@ func init() {
 			// 重置密码，无
 			group.PUT("/password", api.SysUserController.ResetPassword)
 			// 测试
-			group.POST("/test", hello.Hello)
+			group.GET("/test", hello.Hello)
 		})
 		// 评论相关
 		group.Group("/comment", func(group *ghttp.RouterGroup) {
-
+			// 新增课程评论
+			group.POST("/course", api.CommentController.InsertCourseComment)
+			// 新增实验评论
+			group.POST("/lab", api.CommentController.InsertLabComment)
+			// 查询实验评论
+			group.GET("/course", api.CommentController.ListCourseComment)
+			group.GET("/lab", api.CommentController.ListLabComment)
+			group.DELETE("/course", api.CommentController.DeleteCourseComment)
+			group.DELETE("/lab", api.CommentController.DeleteLabComment)
 		})
 		group.Group("/course", func(group *ghttp.RouterGroup) {
 			// 根据课程id查询课程信息,教师，学生,已添加
@@ -56,11 +64,27 @@ func init() {
 			// 根据课程id分页获取修读该课程的学生，教师,已添加
 			group.GET("/student/:courseId", api.CourseController.ListStuByCourseId)
 			// 学生加入课程，学生,已添加
-			group.POST("/join", api.CourseController.StuJoinCourse)
+			group.POST("/attend", api.CourseController.AttendCourse)
 			// 学生退出课程，学生,已添加
-			group.DELETE("/quit/:courseId", api.CourseController.QuitCourse)
+			group.DELETE("/quit/:courseId", api.CourseController.DropCourse)
 			// 教师解散课程，也就是删除课程，教师
-			group.DELETE("/", api.CourseController.DeleteCourse)
+			group.DELETE("/", api.CourseController.Delete)
+		})
+		// 签到相关
+		group.Group("/checkin", func(group *ghttp.RouterGroup) {
+			// 学生签到
+			group.GET("/stu", api.CheckInController.CheckinForStudent)
+			// 教师发起签到
+			group.GET("/teacher", api.CheckInController.CheckinForTeacher)
+			// 签到记录
+			group.GET("/records", api.CheckInController.ListCheckinRecords)
+			// 签到详情
+			group.GET("/details", api.CheckInController.ListCheckinDetails)
+			// 删除签到记录
+			group.DELETE("/record", api.CheckInController.DeleteRecordsDetails)
+			// 修改签到详情
+			group.PUT("/detail", api.CheckInController.UpdateCheckinDetail)
 		})
 	})
+
 }

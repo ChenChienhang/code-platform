@@ -5,7 +5,9 @@ package service
 
 import (
 	"bytes"
+	"code-platform/app/model"
 	"code-platform/app/service/component"
+	"code-platform/library/common/code"
 	"context"
 	"fmt"
 	"github.com/disintegration/imaging"
@@ -13,21 +15,76 @@ import (
 	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/gfile"
 	"github.com/gogf/gf/text/gstr"
+	"github.com/gogf/gf/util/gconv"
 	"github.com/gogf/guuid"
 	"github.com/minio/minio-go/v7"
 	"image/jpeg"
 	"strings"
+	"time"
 )
 
-var FileService = new(fileService)
+var FileService = newFileService()
 
 var (
-	picBucketName        = "pic"
-	reportBucketName     = "report"
-	attachmentBucketName = "attachment"
+	picBucketName           = g.Cfg().GetString("minio.bucketName.picBucketName")
+	reportBucketName        = g.Cfg().GetString("minio.bucketName.reportBucketName")
+	attachmentBucketName    = g.Cfg().GetString("minio.bucketName.attachment")
+	videoBucketName         = g.Cfg().GetString("minio.bucketName.videoBucketName")
+	redisHeaderDirtyFileSet = "code.platform:dirty.file"
 )
 
 type fileService struct{}
+
+func newFileService() (f *fileService) {
+	f = new(fileService)
+	// 脏文件处理
+	go func(redisKey string) {
+		for {
+			time.Sleep(time.Hour * 24)
+			// 获得集合
+			v, _ := g.Redis().DoVar("SMEMBERS", redisKey)
+			dirtyFiles := make([]model.DirtyFile, 0)
+			_ = gconv.Structs(v, &dirtyFiles)
+			// 删除所有过期文件
+			for _, v := range dirtyFiles {
+				// 过去了24小时该文件且未被引用
+				if time.Now().Sub(v.CreateTime) > 24*time.Hour {
+					// 移除该文件
+					go func(service *fileService) {
+						_ = f.RemoveObject(v.Url)
+					}(f)
+					// 从集合中删除
+					_, _ = g.Redis().Do("SREM", redisKey, v)
+				}
+			}
+		}
+	}(redisHeaderDirtyFileSet)
+	return f
+}
+
+// RemoveDirtyFile 文件被引用，删除脏文件
+// @receiver s
+// @date 2021-02-28 16:38:33
+func (s *fileService) RemoveDirtyFile(url string) {
+	// 获得集合，我觉得这个set应该不会很大，直接遍历问题应该不大
+	v, _ := g.Redis().DoVar("SMEMBERS", redisHeaderDirtyFileSet)
+	dirtyFiles := make([]model.DirtyFile, 0)
+	_ = gconv.Structs(v, &dirtyFiles)
+	// 删除所有过期文件
+	for _, v := range dirtyFiles {
+		// 过去了24小时该文件且未被引用
+		if v.Url == url {
+			// 从集合中删除
+			_, _ = g.Redis().Do("SREM", redisHeaderDirtyFileSet, v)
+			break
+		}
+	}
+}
+
+func (s *fileService) AddDirtyFile(url string) {
+	// 加入集合
+	_, _ = g.Redis().DoVar("SADD", redisHeaderDirtyFileSet, url)
+}
 
 // UploadPdf 上传pdf
 // @receiver s
@@ -36,6 +93,9 @@ type fileService struct{}
 // @return err
 // @date 2021-02-18 23:14:35
 func (s *fileService) UploadPdf(uploadFile *ghttp.UploadFile) (url string, err error) {
+	if gfile.ExtName(uploadFile.Filename) != "pdf" {
+		return "", code.UnSupportUploadError
+	}
 	// 打开
 	file, err := uploadFile.Open()
 	if err != nil {
@@ -54,13 +114,14 @@ func (s *fileService) UploadPdf(uploadFile *ghttp.UploadFile) (url string, err e
 	); err != nil {
 		return "", err
 	}
+	url = fmt.Sprintf("%s/%s/%s%s",
+		g.Cfg().GetString("minio.endpoint"),
+		reportBucketName,
+		uploadName,
+		".pdf")
 	// 返回可直接访问的url
-	return fmt.Sprintf("%s/%s/%s%s",
-			g.Cfg().GetString("minio.endpoint"),
-			reportBucketName,
-			uploadName,
-			".pdf"),
-		nil
+	go s.AddDirtyFile(url)
+	return url, nil
 }
 
 // UploadPic 上传图片
@@ -71,6 +132,18 @@ func (s *fileService) UploadPdf(uploadFile *ghttp.UploadFile) (url string, err e
 // @return err
 // @date 2021-02-18 22:43:25
 func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url string, err error) {
+	// 文件类型检查
+	var contentType string
+	switch gfile.ExtName(uploadFile.Filename) {
+	case "gif":
+		contentType = "image/gif"
+	case "png":
+		contentType = "image/png"
+	case "jpg":
+		contentType = "image/jpeg"
+	default:
+		return "", code.UnSupportUploadError
+	}
 	// 编码
 	file, err := uploadFile.Open()
 	if err != nil {
@@ -93,20 +166,21 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 	if _, err = component.MinioUtil.PutObject(
 		context.Background(),
 		picBucketName,
-		imageUploadName+".jpeg",
+		imageUploadName+gfile.Ext(uploadFile.Filename),
 		buff,
 		int64(buff.Len()),
-		minio.PutObjectOptions{ContentType: "image/jpeg"},
+		minio.PutObjectOptions{ContentType: contentType},
 	); err != nil {
 		return "", err
 	}
+	url = fmt.Sprintf("%s/%s/%s%s",
+		g.Cfg().GetString("minio.endpoint"),
+		picBucketName,
+		imageUploadName,
+		gfile.Ext(uploadFile.Filename))
+	go s.AddDirtyFile(url)
 	// 返回可直接访问的url
-	return fmt.Sprintf("%s/%s/%s%s",
-			g.Cfg().GetString("minio.endpoint"),
-			picBucketName,
-			imageUploadName,
-			".jpeg"),
-		nil
+	return url, nil
 }
 
 // UploadAttachment 上传附件
@@ -116,7 +190,11 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 // @return err
 // @date 2021-02-19 11:24:40
 func (s *fileService) UploadAttachment(uploadFile *ghttp.UploadFile) (url string, err error) {
-	// 打开
+	// 文件类型检查,仅支持rar
+	if gfile.ExtName(uploadFile.Filename) != "rar" {
+		return "", code.UnSupportUploadError
+	}
+	// 打开，附件一律二进制流格式上传
 	file, err := uploadFile.Open()
 	if err != nil {
 		return "", err
@@ -135,62 +213,81 @@ func (s *fileService) UploadAttachment(uploadFile *ghttp.UploadFile) (url string
 	); err != nil {
 		return "", err
 	}
+	url = fmt.Sprintf("%s/%s/%s%s",
+		g.Cfg().GetString("minio.endpoint"),
+		picBucketName,
+		uploadName,
+		gfile.Ext(uploadFile.Filename))
+	go s.AddDirtyFile(url)
 	// 返回可直接访问的url
-	return fmt.Sprintf("%s/%s/%s%s",
-			g.Cfg().GetString("minio.endpoint"),
-			picBucketName,
-			uploadName,
-			gfile.Ext(uploadFile.Filename)),
-		nil
+	return url, nil
 }
 
-//RemovePic 移除图片
-//@receiver s
-//@params url
-//@return error
-//@date 2021-02-10 23:42:03
-func (s *fileService) RemovePic(url string) (err error) {
-	objectName := s.getObjectName(url)
-	if err = s.RemoveObject(objectName, picBucketName); err != nil {
-		return err
+func (s *fileService) UploadVideo(uploadFile *ghttp.UploadFile) (url string, err error) {
+	// 文件类型检查
+	var contentType string
+	// 获取后缀名
+	switch gfile.ExtName(uploadFile.Filename) {
+	case "mp4":
+		contentType = "video/mpeg4"
+	case "avi":
+		contentType = "video/avi"
+	default:
+		return "", code.UnSupportUploadError
 	}
-	return nil
+	file, err := uploadFile.Open()
+	if err != nil {
+		return "", err
+	}
+	uploadName := strings.ReplaceAll(guuid.New().String(), "-", "")
+	if _, err = component.MinioUtil.PutObject(
+		context.Background(),
+		videoBucketName,
+		uploadName+gfile.Ext(uploadFile.Filename),
+		file,
+		uploadFile.Size,
+		minio.PutObjectOptions{ContentType: contentType},
+	); err != nil {
+		return "", err
+	}
+	url = fmt.Sprintf("%s/%s/%s%s",
+		g.Cfg().GetString("minio.endpoint"),
+		picBucketName,
+		uploadName,
+		gfile.Ext(uploadFile.Filename))
+	go s.AddDirtyFile(url)
+
+	return url, nil
 }
 
-// RemovePdf 移除pdf
+// RemoveObject 根据url删除文件
 // @receiver s
 // @params url
-// @return err
-// @date 2021-02-19 11:25:51
-func (s *fileService) RemovePdf(url string) (err error) {
+// @return error
+// @date 2021-02-28 16:32:12
+func (s *fileService) RemoveObject(url string) error {
 	objectName := s.getObjectName(url)
-	if err = s.RemoveObject(objectName, reportBucketName); err != nil {
-		return err
+	var bucketName string
+	switch gfile.ExtName(objectName) {
+	case "gif":
+		bucketName = picBucketName
+	case "png":
+		bucketName = picBucketName
+	case "jpg":
+		bucketName = picBucketName
+	case "mp4":
+		bucketName = videoBucketName
+	case "avi":
+		bucketName = videoBucketName
+	case "pdf":
+		bucketName = reportBucketName
+	case "rar":
+		bucketName = attachmentBucketName
+	default:
+		// 不支持的文件格式
+		return code.UnSupportUploadError
 	}
-	return nil
-}
-
-// RemoveAttachment 移除attachment
-// @receiver s
-// @params url
-// @return err
-// @date 2021-02-19 11:25:51
-func (s *fileService) RemoveAttachment(url string) (err error) {
-	objectName := s.getObjectName(url)
-	if err = s.RemoveObject(objectName, attachmentBucketName); err != nil {
-		return err
-	}
-	return nil
-}
-
-// RemoveObject 删除
-// @receiver s
-// @params objectName 文件名
-// @params bucketName 存储桶
-// @return err
-// @date 2021-02-19 11:23:00
-func (s *fileService) RemoveObject(objectName string, bucketName string) (err error) {
-	if err = component.MinioUtil.RemoveObject(
+	if err := component.MinioUtil.RemoveObject(
 		context.Background(),
 		bucketName,
 		objectName,

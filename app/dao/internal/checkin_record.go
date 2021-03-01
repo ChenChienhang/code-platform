@@ -15,38 +15,36 @@ import (
 	"code-platform/app/model"
 )
 
-// SignInCourseDao is the manager for logic model data accessing
+// CheckinRecordDao is the manager for logic model data accessing
 // and custom defined data operations functions management.
-type SignInCourseDao struct {
+type CheckinRecordDao struct {
 	gmvc.M
 	Table   string
-	Columns signInCourseColumns
+	Columns checkinRecordColumns
 }
 
-// SignInCourseColumns defines and stores column names for table signIn_course.
-type signInCourseColumns struct {
-	SignInCourseId string // id
-	Name           string // 签到名称，例如2021年2月5日签到
-	CourseId       string // 课程id
-	StuId          string // 学生id
-	CreatedAt      string // 创建时间
-	UpdatedAt      string // 更新时间
-	DeletedAt      string // 删除时间
+// CheckinRecordColumns defines and stores column names for table checkin_record.
+type checkinRecordColumns struct {
+	CheckinRecordId string // id
+	Name            string // 签到名称，例如2021年2月5日签到
+	CourseId        string // 课程id
+	CreatedAt       string // 创建时间
+	UpdatedAt       string // 更新时间
+	DeletedAt       string // 删除时间
 }
 
 var (
-	// SignInCourse is globally public accessible object for table signIn_course operations.
-	SignInCourse = &SignInCourseDao{
-		M:     g.DB("default").Model("signIn_course").Safe(),
-		Table: "signIn_course",
-		Columns: signInCourseColumns{
-			SignInCourseId: "signIn_course_id",
-			Name:           "name",
-			CourseId:       "course_id",
-			StuId:          "stu_id",
-			CreatedAt:      "created_at",
-			UpdatedAt:      "updated_at",
-			DeletedAt:      "deleted_at",
+	// CheckinRecord is globally public accessible object for table checkin_record operations.
+	CheckinRecord = &CheckinRecordDao{
+		M:     g.DB("default").Model("checkin_record").Safe(),
+		Table: "checkin_record",
+		Columns: checkinRecordColumns{
+			CheckinRecordId: "checkin_record_id",
+			Name:            "name",
+			CourseId:        "course_id",
+			CreatedAt:       "created_at",
+			UpdatedAt:       "updated_at",
+			DeletedAt:       "deleted_at",
 		},
 	}
 )
@@ -55,34 +53,34 @@ var (
 // of current DB object and with given context in it.
 // Note that this returned DB object can be used only once, so do not assign it to
 // a global or package variable for long using.
-func (d *SignInCourseDao) Ctx(ctx context.Context) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Ctx(ctx)}
+func (d *CheckinRecordDao) Ctx(ctx context.Context) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Ctx(ctx)}
 }
 
 // As sets an alias name for current table.
-func (d *SignInCourseDao) As(as string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.As(as)}
+func (d *CheckinRecordDao) As(as string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.As(as)}
 }
 
 // TX sets the transaction for current operation.
-func (d *SignInCourseDao) TX(tx *gdb.TX) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.TX(tx)}
+func (d *CheckinRecordDao) TX(tx *gdb.TX) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.TX(tx)}
 }
 
 // Master marks the following operation on master node.
-func (d *SignInCourseDao) Master() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Master()}
+func (d *CheckinRecordDao) Master() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Master()}
 }
 
 // Slave marks the following operation on slave node.
 // Note that it makes sense only if there's any slave node configured.
-func (d *SignInCourseDao) Slave() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Slave()}
+func (d *CheckinRecordDao) Slave() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Slave()}
 }
 
 // Args sets custom arguments for model operation.
-func (d *SignInCourseDao) Args(args ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Args(args...)}
+func (d *CheckinRecordDao) Args(args ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Args(args...)}
 }
 
 // LeftJoin does "LEFT JOIN ... ON ..." statement on the model.
@@ -90,8 +88,8 @@ func (d *SignInCourseDao) Args(args ...interface{}) *SignInCourseDao {
 // and also with its alias name, like:
 // Table("user").LeftJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").LeftJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *SignInCourseDao) LeftJoin(table ...string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.LeftJoin(table...)}
+func (d *CheckinRecordDao) LeftJoin(table ...string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.LeftJoin(table...)}
 }
 
 // RightJoin does "RIGHT JOIN ... ON ..." statement on the model.
@@ -99,8 +97,8 @@ func (d *SignInCourseDao) LeftJoin(table ...string) *SignInCourseDao {
 // and also with its alias name, like:
 // Table("user").RightJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").RightJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *SignInCourseDao) RightJoin(table ...string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.RightJoin(table...)}
+func (d *CheckinRecordDao) RightJoin(table ...string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.RightJoin(table...)}
 }
 
 // InnerJoin does "INNER JOIN ... ON ..." statement on the model.
@@ -108,36 +106,36 @@ func (d *SignInCourseDao) RightJoin(table ...string) *SignInCourseDao {
 // and also with its alias name, like:
 // Table("user").InnerJoin("user_detail", "user_detail.uid=user.uid")
 // Table("user", "u").InnerJoin("user_detail", "ud", "ud.uid=u.uid")
-func (d *SignInCourseDao) InnerJoin(table ...string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.InnerJoin(table...)}
+func (d *CheckinRecordDao) InnerJoin(table ...string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.InnerJoin(table...)}
 }
 
 // Fields sets the operation fields of the model, multiple fields joined using char ','.
 // The parameter <fieldNamesOrMapStruct> can be type of string/map/*map/struct/*struct.
-func (d *SignInCourseDao) Fields(fieldNamesOrMapStruct ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Fields(fieldNamesOrMapStruct...)}
+func (d *CheckinRecordDao) Fields(fieldNamesOrMapStruct ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Fields(fieldNamesOrMapStruct...)}
 }
 
 // FieldsEx sets the excluded operation fields of the model, multiple fields joined using char ','.
 // The parameter <fieldNamesOrMapStruct> can be type of string/map/*map/struct/*struct.
-func (d *SignInCourseDao) FieldsEx(fieldNamesOrMapStruct ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.FieldsEx(fieldNamesOrMapStruct...)}
+func (d *CheckinRecordDao) FieldsEx(fieldNamesOrMapStruct ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.FieldsEx(fieldNamesOrMapStruct...)}
 }
 
 // Option sets the extra operation option for the model.
-func (d *SignInCourseDao) Option(option int) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Option(option)}
+func (d *CheckinRecordDao) Option(option int) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Option(option)}
 }
 
 // OmitEmpty sets OPTION_OMITEMPTY option for the model, which automatically filers
 // the data and where attributes for empty values.
-func (d *SignInCourseDao) OmitEmpty() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.OmitEmpty()}
+func (d *CheckinRecordDao) OmitEmpty() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.OmitEmpty()}
 }
 
 // Filter marks filtering the fields which does not exist in the fields of the operated table.
-func (d *SignInCourseDao) Filter() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Filter()}
+func (d *CheckinRecordDao) Filter() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Filter()}
 }
 
 // Where sets the condition statement for the model. The parameter <where> can be type of
@@ -151,8 +149,8 @@ func (d *SignInCourseDao) Filter() *SignInCourseDao {
 // Where("status IN (?)", g.Slice{1,2,3})
 // Where("age IN(?,?)", 18, 50)
 // Where(User{ Id : 1, UserName : "john"})
-func (d *SignInCourseDao) Where(where interface{}, args ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Where(where, args...)}
+func (d *CheckinRecordDao) Where(where interface{}, args ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Where(where, args...)}
 }
 
 // WherePri does the same logic as M.Where except that if the parameter <where>
@@ -160,54 +158,54 @@ func (d *SignInCourseDao) Where(where interface{}, args ...interface{}) *SignInC
 // key value. That is, if primary key is "id" and given <where> parameter as "123", the
 // WherePri function treats the condition as "id=123", but M.Where treats the condition
 // as string "123".
-func (d *SignInCourseDao) WherePri(where interface{}, args ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.WherePri(where, args...)}
+func (d *CheckinRecordDao) WherePri(where interface{}, args ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.WherePri(where, args...)}
 }
 
 // And adds "AND" condition to the where statement.
-func (d *SignInCourseDao) And(where interface{}, args ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.And(where, args...)}
+func (d *CheckinRecordDao) And(where interface{}, args ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.And(where, args...)}
 }
 
 // Or adds "OR" condition to the where statement.
-func (d *SignInCourseDao) Or(where interface{}, args ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Or(where, args...)}
+func (d *CheckinRecordDao) Or(where interface{}, args ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Or(where, args...)}
 }
 
 // Group sets the "GROUP BY" statement for the model.
-func (d *SignInCourseDao) Group(groupBy string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Group(groupBy)}
+func (d *CheckinRecordDao) Group(groupBy string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Group(groupBy)}
 }
 
 // Order sets the "ORDER BY" statement for the model.
-func (d *SignInCourseDao) Order(orderBy ...string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Order(orderBy...)}
+func (d *CheckinRecordDao) Order(orderBy ...string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Order(orderBy...)}
 }
 
 // Limit sets the "LIMIT" statement for the model.
 // The parameter <limit> can be either one or two number, if passed two number is passed,
 // it then sets "LIMIT limit[0],limit[1]" statement for the model, or else it sets "LIMIT limit[0]"
 // statement.
-func (d *SignInCourseDao) Limit(limit ...int) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Limit(limit...)}
+func (d *CheckinRecordDao) Limit(limit ...int) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Limit(limit...)}
 }
 
 // Offset sets the "OFFSET" statement for the model.
 // It only makes sense for some databases like SQLServer, PostgreSQL, etc.
-func (d *SignInCourseDao) Offset(offset int) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Offset(offset)}
+func (d *CheckinRecordDao) Offset(offset int) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Offset(offset)}
 }
 
 // Page sets the paging number for the model.
 // The parameter <page> is started from 1 for paging.
 // Note that, it differs that the Limit function start from 0 for "LIMIT" statement.
-func (d *SignInCourseDao) Page(page, limit int) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Page(page, limit)}
+func (d *CheckinRecordDao) Page(page, limit int) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Page(page, limit)}
 }
 
 // Batch sets the batch operation number for the model.
-func (d *SignInCourseDao) Batch(batch int) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Batch(batch)}
+func (d *CheckinRecordDao) Batch(batch int) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Batch(batch)}
 }
 
 // Cache sets the cache feature for the model. It caches the result of the sql, which means
@@ -222,8 +220,8 @@ func (d *SignInCourseDao) Batch(batch int) *SignInCourseDao {
 // control the cache like changing the <duration> or clearing the cache with specified <name>.
 //
 // Note that, the cache feature is disabled if the model is operating on a transaction.
-func (d *SignInCourseDao) Cache(duration time.Duration, name ...string) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Cache(duration, name...)}
+func (d *CheckinRecordDao) Cache(duration time.Duration, name ...string) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Cache(duration, name...)}
 }
 
 // Data sets the operation data for the model.
@@ -233,39 +231,39 @@ func (d *SignInCourseDao) Cache(duration time.Duration, name ...string) *SignInC
 // Data("uid", 10000)
 // Data(g.Map{"uid": 10000, "name":"john"})
 // Data(g.Slice{g.Map{"uid": 10000, "name":"john"}, g.Map{"uid": 20000, "name":"smith"})
-func (d *SignInCourseDao) Data(data ...interface{}) *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Data(data...)}
+func (d *CheckinRecordDao) Data(data ...interface{}) *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Data(data...)}
 }
 
 // All does "SELECT FROM ..." statement for the model.
-// It retrieves the records from table and returns the result as []*model.SignInCourse.
+// It retrieves the records from table and returns the result as []*model.CheckinRecord.
 // It returns nil if there's no record retrieved with the given conditions from table.
 //
 // The optional parameter <where> is the same as the parameter of M.Where function,
 // see M.Where.
-func (d *SignInCourseDao) All(where ...interface{}) ([]*model.SignInCourse, error) {
+func (d *CheckinRecordDao) All(where ...interface{}) ([]*model.CheckinRecord, error) {
 	all, err := d.M.All(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entities []*model.SignInCourse
+	var entities []*model.CheckinRecord
 	if err = all.Structs(&entities); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	return entities, nil
 }
 
-// One retrieves one record from table and returns the result as *model.SignInCourse.
+// One retrieves one record from table and returns the result as *model.CheckinRecord.
 // It returns nil if there's no record retrieved with the given conditions from table.
 //
 // The optional parameter <where> is the same as the parameter of M.Where function,
 // see M.Where.
-func (d *SignInCourseDao) One(where ...interface{}) (*model.SignInCourse, error) {
+func (d *CheckinRecordDao) One(where ...interface{}) (*model.CheckinRecord, error) {
 	one, err := d.M.One(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entity *model.SignInCourse
+	var entity *model.CheckinRecord
 	if err = one.Struct(&entity); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -274,12 +272,12 @@ func (d *SignInCourseDao) One(where ...interface{}) (*model.SignInCourse, error)
 
 // FindOne retrieves and returns a single Record by M.WherePri and M.One.
 // Also see M.WherePri and M.One.
-func (d *SignInCourseDao) FindOne(where ...interface{}) (*model.SignInCourse, error) {
+func (d *CheckinRecordDao) FindOne(where ...interface{}) (*model.CheckinRecord, error) {
 	one, err := d.M.FindOne(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entity *model.SignInCourse
+	var entity *model.CheckinRecord
 	if err = one.Struct(&entity); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -288,12 +286,12 @@ func (d *SignInCourseDao) FindOne(where ...interface{}) (*model.SignInCourse, er
 
 // FindAll retrieves and returns Result by by M.WherePri and M.All.
 // Also see M.WherePri and M.All.
-func (d *SignInCourseDao) FindAll(where ...interface{}) ([]*model.SignInCourse, error) {
+func (d *CheckinRecordDao) FindAll(where ...interface{}) ([]*model.CheckinRecord, error) {
 	all, err := d.M.FindAll(where...)
 	if err != nil {
 		return nil, err
 	}
-	var entities []*model.SignInCourse
+	var entities []*model.CheckinRecord
 	if err = all.Structs(&entities); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -316,7 +314,7 @@ func (d *SignInCourseDao) FindAll(where ...interface{}) ([]*model.SignInCourse, 
 //
 // user := (*User)(nil)
 // err  := dao.User.Where("id", 1).Struct(&user)
-func (d *SignInCourseDao) Struct(pointer interface{}, where ...interface{}) error {
+func (d *CheckinRecordDao) Struct(pointer interface{}, where ...interface{}) error {
 	return d.M.Struct(pointer, where...)
 }
 
@@ -336,7 +334,7 @@ func (d *SignInCourseDao) Struct(pointer interface{}, where ...interface{}) erro
 //
 // users := ([]*User)(nil)
 // err   := dao.User.Structs(&users)
-func (d *SignInCourseDao) Structs(pointer interface{}, where ...interface{}) error {
+func (d *CheckinRecordDao) Structs(pointer interface{}, where ...interface{}) error {
 	return d.M.Structs(pointer, where...)
 }
 
@@ -361,14 +359,14 @@ func (d *SignInCourseDao) Structs(pointer interface{}, where ...interface{}) err
 //
 // users := ([]*User)(nil)
 // err   := dao.User.Scan(&users)
-func (d *SignInCourseDao) Scan(pointer interface{}, where ...interface{}) error {
+func (d *CheckinRecordDao) Scan(pointer interface{}, where ...interface{}) error {
 	return d.M.Scan(pointer, where...)
 }
 
 // Chunk iterates the table with given size and callback function.
-func (d *SignInCourseDao) Chunk(limit int, callback func(entities []*model.SignInCourse, err error) bool) {
+func (d *CheckinRecordDao) Chunk(limit int, callback func(entities []*model.CheckinRecord, err error) bool) {
 	d.M.Chunk(limit, func(result gdb.Result, err error) bool {
-		var entities []*model.SignInCourse
+		var entities []*model.CheckinRecord
 		err = result.Structs(&entities)
 		if err == sql.ErrNoRows {
 			return false
@@ -378,16 +376,16 @@ func (d *SignInCourseDao) Chunk(limit int, callback func(entities []*model.SignI
 }
 
 // LockUpdate sets the lock for update for current operation.
-func (d *SignInCourseDao) LockUpdate() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.LockUpdate()}
+func (d *CheckinRecordDao) LockUpdate() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.LockUpdate()}
 }
 
 // LockShared sets the lock in share mode for current operation.
-func (d *SignInCourseDao) LockShared() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.LockShared()}
+func (d *CheckinRecordDao) LockShared() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.LockShared()}
 }
 
 // Unscoped enables/disables the soft deleting feature.
-func (d *SignInCourseDao) Unscoped() *SignInCourseDao {
-	return &SignInCourseDao{M: d.M.Unscoped()}
+func (d *CheckinRecordDao) Unscoped() *CheckinRecordDao {
+	return &CheckinRecordDao{M: d.M.Unscoped()}
 }

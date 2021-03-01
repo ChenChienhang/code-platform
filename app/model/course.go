@@ -7,6 +7,7 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
+	"github.com/gogf/gf/os/gtime"
 )
 
 // Course is the golang structure for table course.
@@ -14,32 +15,76 @@ type Course internal.Course
 
 // Fill with you ideas below.
 
-type CoursePageResp struct {
-	Records  []*Course
-	PageInfo *response.PageInfo
+type CourseResp struct {
+	CourseId    int         `orm:"course_id,primary" json:"course_id"`    // 主键
+	TeacherId   int         `orm:"teacher_id"        json:"teacher_id"`   // 教师id
+	TeacherName *string     `orm:"teacher_name"      json:"teacher_name"` // 教师名称
+	CourseName  string      `orm:"course_name"       json:"course_name"`  // 课程名称，限15字
+	CourseDes   string      `orm:"course_des"        json:"course_des"`   // 课程描述，限300字
+	PicUrl      *string     `orm:"pic_url"           json:"pic_url"`      // 封面url
+	SecretKey   int         `orm:"secret_key"        json:"secret_key"`   // 加入课程的密码,6位
+	IsClose     int         `orm:"is_close"          json:"is_close"`     // 结课标志
+	CreatedAt   *gtime.Time `orm:"updated_at"        json:"created_at"`   // 创建时间
+	UpdatedAt   *gtime.Time `orm:"deleted_at"        json:"updated_at"`   // 修改时间
+	Language    *int        `orm:"language"          json:"language""`    // 语言类型枚举
 }
 
-//type NewCourseReq struct {
-//	TeacherId  int    // 教师id
-//	CourseDes  string // 课程描述,限200字
-//	CourseName string // 课程名称，限长15字
-//	SecretKey  string // 加入课程的密码
-//}
+type CoursePageResp struct {
+	Records  []*CourseResp      `json:"records"`
+	PageInfo *response.PageInfo `json:"page_info"`
+}
 
-// 课程修改
-//type CourseModifyReq struct {
-//	CourseId   int    // 主键
-//	TeacherId  int    // 教师id
-//	CourseName string // 课程名称，限长15字
-//	CourseDes  string // 课程描述,限两百字
-//	SecretKey  string // 加入课程的密码
-//	Deleted    int    // 删除标志
-//	Closed     int    // 结课标志
-//}
+type InsertCourseReq struct {
+	TeacherId   int     // 教师id
+	TeacherName string  // 教师名称
+	CourseName  string  // 课程名称，限长15字
+	CourseDes   string  // 课程描述,限两百字
+	IsClose     int     // 结课标志，初始直接置0
+	PicUrl      *string // 封面url
+	SecretKey   int     // 加入课程的密码,6位
+	Language    int     // 语言类型枚举
+}
 
-// 加入课程
-type JoinCourseReq struct {
-	UserId    int // 学生id
+type UpdateCourseReq struct {
+	CourseId   int     // 主键
+	TeacherId  int     // 教师id
+	CourseName *string // 课程名称，限长15字
+	CourseDes  *string // 课程描述,限两百字
+	PicUrl     *string // 封面url
+	SecretKey  *int    // 加入课程的密码,6位
+}
+
+type ListByTeacherIdReq struct {
+	PageCurrent int // 页码
+	PageSize    int // 页面大小
+	TeacherId   int // 教师id
+}
+
+type ListCourseByStuIdReq struct {
+	PageCurrent int // 页码
+	PageSize    int // 页面大小
+	StudentId   int // 学生id
+}
+
+type ListStuByCourseIdReq struct {
+	PageCurrent int // 页码
+	PageSize    int // 页面大小
+	CourseId    int // 课程id
+}
+
+type AttendCourseReq struct {
+	StudentId int // 学生id
 	CourseId  int // 课程id
-	SecretKey int // 加入课程的密码
+	SecretKey int // 密钥
+}
+
+type DropCourseReq struct {
+	CourseId  int   // 课程id
+	StudentId []int // 学生id
+}
+
+type SearchListByCourseNameReq struct {
+	CourseName  string // 用于搜索课程名称
+	PageCurrent int    // 页码
+	PageSize    int    // 页面大小
 }

@@ -85,9 +85,9 @@ func TestPassword(t *testing.T) {
 }
 
 func Test4(t *testing.T) {
-	all, err := dao.Course.All()
+	one, err := dao.Course.WherePri(1021).FindOne()
 	if err != nil {
 		println(err)
 	}
-	println(all)
+	println(one)
 }
