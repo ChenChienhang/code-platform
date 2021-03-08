@@ -22,7 +22,7 @@ type CheckInMsg struct {
 }
 
 type StartCheckInReq struct {
-	SecretKey int
+	SecretKey string
 	CourseId  int
 	Duration  int
 	Name      string

@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/glog"
+	"github.com/gogf/gf/util/gconv"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func (c *checkInController) CheckinForStudent(r *ghttp.Request) {
 	}
 	for {
 		cancelPolling := false
-		var userId, courseId string
+		var userId, courseId int
 		_, msgByte, err := ws.ReadMessage()
 		if err != nil {
 			// ws断开
@@ -57,8 +58,8 @@ func (c *checkInController) CheckinForStudent(r *ghttp.Request) {
 		}
 		switch msg.Type {
 		case 1:
-			userId = r.GetVar(dao.SysUser.Columns.UserId).String()
-			courseId = msg.Data.Get("courseId")
+			userId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+			courseId = gconv.Int(msg.Data.Get("courseId"))
 			// 查看签到情况
 			ok, resp, err := service.CheckinService.CheckProcessing(courseId)
 			if err != nil {
@@ -74,7 +75,7 @@ func (c *checkInController) CheckinForStudent(r *ghttp.Request) {
 					for !*cancel {
 						// 每秒轮询
 						time.Sleep(time.Second * 1)
-						ok, resp, err := service.CheckinService.Polling(cancel, ws, courseId)
+						ok, resp, err := service.CheckinService.Polling(courseId)
 						if err != nil {
 							glog.Errorf("ws 轮询错误：%s", err.Error())
 						}
