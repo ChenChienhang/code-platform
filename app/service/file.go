@@ -6,7 +6,6 @@ package service
 import (
 	"bytes"
 	"code-platform/app/model"
-	"code-platform/app/service/component"
 	"code-platform/library/common/code"
 	"context"
 	"fmt"
@@ -18,25 +17,93 @@ import (
 	"github.com/gogf/gf/util/gconv"
 	"github.com/gogf/guuid"
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"image/jpeg"
 	"strings"
 	"time"
 )
 
-var FileService = newFileService()
-
-var (
-	picBucketName           = g.Cfg().GetString("minio.bucketName.picBucketName")
-	reportBucketName        = g.Cfg().GetString("minio.bucketName.reportBucketName")
-	attachmentBucketName    = g.Cfg().GetString("minio.bucketName.attachment")
-	videoBucketName         = g.Cfg().GetString("minio.bucketName.videoBucketName")
+const (
 	redisHeaderDirtyFileSet = "code.platform:dirty.file"
+	// 自己试出来的，官网的sdk说明已经过时了，不能直接把"github.com/minio/minio-go/v7/pkg/policy"的常量放进去
+	readOnly     = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucket\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}"
+	writeOnly    = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucketMultipartUploads\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:AbortMultipartUpload\",\"s3:DeletePic\",\"s3:ListMultipartUploadParts\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}"
+	writeAndRead = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:ListBucket\",\"s3:ListBucketMultipartUploads\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:AbortMultipartUpload\",\"s3:DeletePic\",\"s3:GetObject\",\"s3:ListMultipartUploadParts\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}"
 )
 
-type fileService struct{}
+var FileService = newFileService()
+
+type fileService struct {
+	minio                *minio.Client
+	picBucketName        string
+	reportBucketName     string
+	attachmentBucketName string
+	videoBucketName      string
+}
 
 func newFileService() (f *fileService) {
-	f = new(fileService)
+
+	endpoint := g.Cfg().GetString("minio.endpoint")
+	accessKeyID := g.Cfg().GetString("minio.accessKeyID")
+	secretAccessKey := g.Cfg().GetString("minio.secretAccessKey")
+	// 初使化 minio client对象。
+	m, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: false,
+	})
+	if err != nil {
+		panic(err)
+	}
+	f = &fileService{
+		minio:                m,
+		picBucketName:        g.Cfg().GetString("minio.bucketName.picBucketName"),
+		reportBucketName:     g.Cfg().GetString("minio.bucketName.reportBucketName"),
+		attachmentBucketName: g.Cfg().GetString("minio.bucketName.attachment"),
+		videoBucketName:      g.Cfg().GetString("minio.bucketName.videoBucketName"),
+	}
+
+	location := "cn-north-1"
+	ctx := context.Background()
+
+	// 创建一个存储桶,用于放图片
+	bucketName := f.picBucketName
+	isExist, err := m.BucketExists(ctx, bucketName)
+	if err != nil {
+		panic(err)
+	}
+	if !isExist {
+		if err = m.MakeBucket(
+			ctx,
+			bucketName,
+			minio.MakeBucketOptions{Region: location},
+		); err != nil {
+			panic(bucketName + " 存储桶 创建失败" + err.Error())
+		}
+		//设置该存储桶策略
+		if err = m.SetBucketPolicy(ctx, bucketName, fmt.Sprintf(readOnly, bucketName, bucketName)); err != nil {
+			panic(err)
+		}
+	}
+	// 创建一个叫report的存储桶,用于放实验报告
+	bucketName = f.reportBucketName
+	isExist, err = m.BucketExists(ctx, bucketName)
+	if err != nil {
+		panic(err)
+	}
+	if !isExist {
+		if err = m.MakeBucket(
+			ctx,
+			bucketName,
+			minio.MakeBucketOptions{Region: location},
+		); err != nil {
+			panic(bucketName + " 存储桶 创建失败" + err.Error())
+		}
+		//设置该存储桶策略
+		if err = m.SetBucketPolicy(ctx, bucketName, fmt.Sprintf(readOnly, bucketName, bucketName)); err != nil {
+			panic(err)
+		}
+	}
+
 	// 脏文件处理
 	go func(redisKey string) {
 		for {
@@ -104,9 +171,9 @@ func (s *fileService) UploadPdf(uploadFile *ghttp.UploadFile) (url string, err e
 	// 文件名
 	uploadName := strings.ReplaceAll(guuid.New().String(), "-", "")
 	// 上传
-	if _, err = component.MinioUtil.PutObject(
+	if _, err = s.minio.PutObject(
 		context.Background(),
-		reportBucketName,
+		s.reportBucketName,
 		fmt.Sprintf("%s%s", uploadName, ".pdf"),
 		file,
 		uploadFile.Size,
@@ -116,7 +183,7 @@ func (s *fileService) UploadPdf(uploadFile *ghttp.UploadFile) (url string, err e
 	}
 	url = fmt.Sprintf("%s/%s/%s%s",
 		g.Cfg().GetString("minio.endpoint"),
-		reportBucketName,
+		s.reportBucketName,
 		uploadName,
 		".pdf")
 	// 返回可直接访问的url
@@ -163,9 +230,9 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 		return "", err
 	}
 	// 上传
-	if _, err = component.MinioUtil.PutObject(
+	if _, err = s.minio.PutObject(
 		context.Background(),
-		picBucketName,
+		s.picBucketName,
 		imageUploadName+gfile.Ext(uploadFile.Filename),
 		buff,
 		int64(buff.Len()),
@@ -175,7 +242,7 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 	}
 	url = fmt.Sprintf("%s/%s/%s%s",
 		g.Cfg().GetString("minio.endpoint"),
-		picBucketName,
+		s.picBucketName,
 		imageUploadName,
 		gfile.Ext(uploadFile.Filename))
 	go s.AddDirtyFile(url)
@@ -202,9 +269,9 @@ func (s *fileService) UploadAttachment(uploadFile *ghttp.UploadFile) (url string
 	// 文件名
 	uploadName := strings.ReplaceAll(guuid.New().String(), "-", "")
 	// 上传
-	if _, err = component.MinioUtil.PutObject(
+	if _, err = s.minio.PutObject(
 		context.Background(),
-		picBucketName,
+		s.picBucketName,
 		// gfile.Ext获得后缀名，包括.
 		uploadName+gfile.Ext(uploadFile.Filename),
 		file,
@@ -215,7 +282,7 @@ func (s *fileService) UploadAttachment(uploadFile *ghttp.UploadFile) (url string
 	}
 	url = fmt.Sprintf("%s/%s/%s%s",
 		g.Cfg().GetString("minio.endpoint"),
-		picBucketName,
+		s.picBucketName,
 		uploadName,
 		gfile.Ext(uploadFile.Filename))
 	go s.AddDirtyFile(url)
@@ -240,9 +307,9 @@ func (s *fileService) UploadVideo(uploadFile *ghttp.UploadFile) (url string, err
 		return "", err
 	}
 	uploadName := strings.ReplaceAll(guuid.New().String(), "-", "")
-	if _, err = component.MinioUtil.PutObject(
+	if _, err = s.minio.PutObject(
 		context.Background(),
-		videoBucketName,
+		s.videoBucketName,
 		uploadName+gfile.Ext(uploadFile.Filename),
 		file,
 		uploadFile.Size,
@@ -252,7 +319,7 @@ func (s *fileService) UploadVideo(uploadFile *ghttp.UploadFile) (url string, err
 	}
 	url = fmt.Sprintf("%s/%s/%s%s",
 		g.Cfg().GetString("minio.endpoint"),
-		picBucketName,
+		s.videoBucketName,
 		uploadName,
 		gfile.Ext(uploadFile.Filename))
 	go s.AddDirtyFile(url)
@@ -270,24 +337,24 @@ func (s *fileService) RemoveObject(url string) error {
 	var bucketName string
 	switch gfile.ExtName(objectName) {
 	case "gif":
-		bucketName = picBucketName
+		bucketName = s.picBucketName
 	case "png":
-		bucketName = picBucketName
+		bucketName = s.picBucketName
 	case "jpg":
-		bucketName = picBucketName
+		bucketName = s.picBucketName
 	case "mp4":
-		bucketName = videoBucketName
+		bucketName = s.videoBucketName
 	case "avi":
-		bucketName = videoBucketName
+		bucketName = s.videoBucketName
 	case "pdf":
-		bucketName = reportBucketName
+		bucketName = s.reportBucketName
 	case "rar":
-		bucketName = attachmentBucketName
+		bucketName = s.attachmentBucketName
 	default:
 		// 不支持的文件格式
 		return code.UnSupportUploadError
 	}
-	if err := component.MinioUtil.RemoveObject(
+	if err := s.minio.RemoveObject(
 		context.Background(),
 		bucketName,
 		objectName,
