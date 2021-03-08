@@ -8,6 +8,7 @@ package internal
 type LabSubmit struct {
 	LabSubmitId   int    `orm:"lab_submit_id,primary" json:"lab_submit_id"`   //
 	LabId         int    `orm:"lab_id"                json:"lab_id"`          // lab id
+	UserId        int    `orm:"user_id"               json:"user_id"`         // 用户id
 	ReportUrl     string `orm:"report_url"            json:"report_url"`      // 存放实验报告pdf的url
 	TempReportUrl string `orm:"temp_report_url"       json:"temp_report_url"` // 暂存实验报告url
 	IsCode        int    `orm:"is_code"               json:"is_code"`         // 代码是否提交

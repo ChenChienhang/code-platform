@@ -66,3 +66,15 @@ func (c *labController) Delete(r *ghttp.Request) {
 	}
 	response.Succ(r, true)
 }
+
+func (c *labController) summitReport(r *ghttp.Request) {
+	var req *model.SummitReportReq
+	if err := r.Parse(&req); err != nil {
+		response.Exit(r, err)
+	}
+	req.StuId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.Report = r.GetUploadFile("report")
+	f := r.GetUploadFile("report")
+	service.LabService.summitReport(req)
+
+}
