@@ -25,7 +25,7 @@ type CourseRecourseDao struct {
 
 // CourseRecourseColumns defines and stores column names for table course_recourse.
 type courseRecourseColumns struct {
-	CourseRecourseId string //
+	CourseRecourseId string // id
 	CourseId         string // 课程id
 	Title            string // 标题，限20字
 	Content          string // 公告内容，无字数限制

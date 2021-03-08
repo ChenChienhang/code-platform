@@ -6,12 +6,15 @@ package service
 import (
 	"code-platform/app/dao"
 	"code-platform/app/model"
+	"code-platform/library/common/code"
 	"code-platform/library/common/response"
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
+	"github.com/gogf/gf/container/gmap"
+	"github.com/gogf/gf/container/gset"
 	"github.com/gogf/gf/database/gdb"
 	"github.com/gogf/gf/frame/g"
-	"github.com/gogf/gf/net/ghttp"
+	"github.com/gogf/gf/os/gcache"
 	"github.com/gogf/gf/os/glog"
 	"github.com/gogf/gf/text/gstr"
 	"github.com/gogf/gf/util/gconv"
@@ -20,20 +23,20 @@ import (
 	"time"
 )
 
-var CheckinService = new(checkinService)
+var CheckinService = newCheckinService()
 
-var (
-	// 保存密钥
-	redisHeaderSecretKey = "code.platform:signin:key:"
-	// 完成签到的学生
-	redisHeaderFinishSignIn = "code.platform:signin:finish:"
-)
+type checkinService struct {
+	ICheckinServiceCache
+}
 
-type checkinService struct{}
+func newCheckinService() (s *checkinService) {
+	s = &checkinService{newCache()}
+	return s
+}
 
 // websocket 部分
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // CheckProcessing 检查是否正在签到
 // @receiver c
@@ -41,16 +44,14 @@ type checkinService struct{}
 // @return resp
 // @return err
 // @date 2021-02-19 18:01:46
-func (c *checkinService) CheckProcessing(courseId string) (ok bool, resp *g.Map, err error) {
+func (c *checkinService) CheckProcessing(courseId int) (ok bool, resp *g.Map, err error) {
 	// 检查签到密钥的过期时间
-	r := g.Redis()
-	v, err := r.DoVar("TTL", redisHeaderSecretKey+courseId)
+	expire, err := c.getTTL(courseId)
 	if err != nil {
 		return false, nil, err
 	}
-	expireTime := v.Int()
 	// key 不存在时，可能签到已经结束或者还没有开始签到
-	if expireTime == -2 {
+	if expire == -2 {
 		// 查出离现在为止最近的一次签到时间
 		lastTime, err := dao.CheckinRecord.Order(dao.CheckinRecord.Columns.CreatedAt + " desc").FindValue()
 		if err != nil {
@@ -58,10 +59,12 @@ func (c *checkinService) CheckProcessing(courseId string) (ok bool, resp *g.Map,
 		}
 		resp = &g.Map{"res": 2, "last_time": lastTime.GTime()}
 		return false, resp, nil
-		// key 存在但没有设置剩余生存时间时
+	} else if expire == -1 {
+		// key 存在但没有设置剩余生存时间,不应该存在
+		return false, nil, code.UnExpectError
 	}
 	// 返回签到剩余时间
-	resp = &g.Map{"res": 1, "expire": expireTime}
+	resp = &g.Map{"res": 1, "expire": expire}
 	return true, resp, nil
 }
 
@@ -73,52 +76,79 @@ func (c *checkinService) CheckProcessing(courseId string) (ok bool, resp *g.Map,
 // @return resp
 // @return err
 // @date 2021-02-19 18:01:38
-func (c *checkinService) CheckIn(stuId string, courseId string, secretKey string) (resp *g.Map, err error) {
+func (c *checkinService) CheckIn(stuId int, courseId int, secretKey string) (resp *g.Map, err error) {
 	// 获取签到密钥
-	r := g.Redis()
-	v, err := r.DoVar("GET", redisHeaderSecretKey+courseId)
+	key, err := c.getSecretKey(courseId)
 	if err != nil {
 		return nil, err
 	}
 	// 无正在进行的签到或者签到已结束
-	if v.IsEmpty() {
+	if key == "" {
 		resp = &g.Map{"res": 3}
 		return resp, nil
-	} else if v.String() != secretKey {
+	} else if key != secretKey {
 		//  签到码错误
 		resp = &g.Map{"res": 4}
 		return resp, nil
 	}
 	// 签到码正确，加入缓存签到池，等待签到结束后写入数据库
-	if _, err = r.Do("SADD", redisHeaderFinishSignIn+courseId, stuId); err != nil {
+	if err = c.setFinishStu(stuId, courseId); err != nil {
 		return nil, err
 	}
 	resp = &g.Map{"res": 5}
 	return resp, nil
 }
 
-func (c *checkinService) Polling(cancel *bool, ws *ghttp.WebSocket, courseId string) (ok bool, resp *g.Map, err error) {
+func (c *checkinService) Polling(courseId int) (ok bool, resp *g.Map, err error) {
 	// 检查签到密钥的过期时间
-	r := g.Redis()
-	v, err := r.DoVar("TTL", redisHeaderSecretKey+courseId)
+	expire, err := c.getTTL(courseId)
 	if err != nil {
 		return false, nil, err
 	}
-	expireTime := v.Int()
 	// 开始签到
-	if expireTime != -2 && expireTime != -1 {
+	if expire != -2 && expire != -1 {
 		// 返回签到剩余时间
-		resp = &g.Map{"res": 1, "expire": expireTime}
+		resp = &g.Map{"res": 1, "expire": expire}
 		return true, resp, nil
 	}
 	// 未开始开始签到
 	return false, nil, nil
-
+}
+func (c *checkinService) StartCheckIn(req *model.StartCheckInReq) (err error) {
+	// 存入签到密钥,限时
+	if err = c.setSecretKey(req.SecretKey, req.CourseId, req.Duration); err != nil {
+		return err
+	}
+	// 清楚上次签到的可能残余的数据
+	if err = c.removeFinishStu(req.CourseId); err != nil {
+		return err
+	}
+	// 启动一个协程，当倒计时结束，把签到信息保存
+	go func() {
+		// 等待签到时间结束
+		time.Sleep(time.Duration(req.Duration))
+		// 取出set
+		stuIds, _ := c.getFinishStu(req.CourseId)
+		defer func() {
+			_ = c.removeFinishStu(req.CourseId)
+		}()
+		// 取得已签到的所有学生的id,组装保存的内容
+		saveSlice := make([]model.CheckinDetailResp, len(stuIds))
+		for i, v := range stuIds {
+			saveSlice[i].CourseId = req.CourseId
+			saveSlice[i].StuId = v
+		}
+		// 保存签到信息
+		if _, err = dao.CheckinDetail.Batch(len(stuIds)).Save(saveSlice); err != nil {
+			glog.Errorf("签到保存数据库错误 :%s")
+		}
+	}()
+	return nil
 }
 
 // crud 部分
-//////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ListCheckinRecords 列表签到记录
 // @receiver c
@@ -322,42 +352,188 @@ func (c *checkinService) UpdateCheckinDetail(req *model.UpdateCheckinDetail) err
 	return nil
 }
 
-func (c *checkinService) StartCheckIn(req *model.StartCheckInReq) (err error) {
-	// 存入签到密钥,限时
+type ICheckinServiceCache interface {
+	// getTTL
+	// @params courseId
+	// @return expire -1：不会过期，-2，不存在该键，其他为过期时间
+	// @return err
+	// @date 2021-03-02 19:12:58
+	getTTL(courseId int) (expire int, err error)
+
+	// getSecretKey
+	// @params courseId
+	// @return secretKey ""是缓存中不存在值
+	// @return err
+	// @date 2021-03-02 19:25:07
+	getSecretKey(courseId int) (secretKey string, err error)
+
+	// setSecretKey 密钥
+	// @params secretKey
+	// @params duration
+	// @params courseId
+	// @return err
+	// @date 2021-03-02 20:25:46
+	setSecretKey(secretKey string, duration int, courseId int) (err error)
+
+	// setFinishStu 完成签到的学生放入缓存，等待倒计时结束
+	// @params stuId
+	// @params courseId
+	// @return err
+	// @date 2021-03-02 20:25:54
+	setFinishStu(stuId int, courseId int) (err error)
+
+	// getFinishStu 获得在缓存的学生
+	// @params courseId
+	// @return finishStuIds
+	// @return err
+	// @date 2021-03-02 20:26:28
+	getFinishStu(courseId int) (finishStuIds []int, err error)
+
+	// removeFinishStu 移除在缓存的学生
+	// @params courseId
+	// @return err
+	// @date 2021-03-02 20:26:41
+	removeFinishStu(courseId int) (err error)
+}
+
+type redisICheckinServiceCache struct {
+	// 保存密钥
+	redisHeaderSecretKey string
+	// 完成签到的学生
+	redisHeaderFinishSignIn string
+}
+
+func (c *redisICheckinServiceCache) removeFinishStu(courseId int) (err error) {
+	r := g.Redis()
+	if _, err = r.Do("DEL", c.redisHeaderFinishSignIn+strconv.Itoa(courseId)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *redisICheckinServiceCache) getFinishStu(courseId int) (finishStuIds []int, err error) {
+	// 取出set
+	r := g.Redis()
+	v, err := r.DoVar("SMEMBERS", c.redisHeaderFinishSignIn+strconv.Itoa(courseId))
+	if err != nil {
+		return nil, err
+	}
+	return v.Ints(), nil
+}
+
+func (c *redisICheckinServiceCache) getSecretKey(courseId int) (secretKey string, err error) {
+	// 获取签到密钥
+	r := g.Redis()
+	v, err := r.DoVar("GET", c.redisHeaderSecretKey+strconv.Itoa(courseId))
+	if err != nil {
+		return "", err
+	}
+	// 值不存在
+	if v.IsNil() {
+		return "", nil
+	}
+	return v.String(), nil
+}
+
+func (c *redisICheckinServiceCache) getTTL(courseId int) (expire int, err error) {
+	r := g.Redis()
+	v, err := r.DoVar("TTL", c.redisHeaderSecretKey+strconv.Itoa(courseId))
+	if err != nil {
+		return 0, err
+	}
+	return v.Int(), err
+}
+
+func (c *redisICheckinServiceCache) setSecretKey(secretKey string, duration int, courseId int) (err error) {
 	r := g.Redis()
 	if _, err = r.DoWithTimeout(
-		time.Duration(req.Duration)*time.Second,
+		time.Duration(duration)*time.Second,
 		"SET",
-		redisHeaderSecretKey+strconv.Itoa(req.CourseId),
-		req.SecretKey,
+		c.redisHeaderSecretKey+strconv.Itoa(courseId),
+		secretKey,
 	); err != nil {
 		return err
 	}
-	// 启动一个协程，当倒计时结束，把签到信息保存
-	go func(courseId string, duration time.Duration, name string) {
-		// 等待签到时间结束
-		time.Sleep(duration * time.Second)
-		// 取出set
-		v, err := r.DoVar("SMEMBERS", redisHeaderFinishSignIn+courseId)
-		if err != nil {
-			glog.Errorf("签到收集名单失败：%s", err.Error())
-		}
-		defer func() {
-			if _, err = r.Do("DEL", redisHeaderFinishSignIn+courseId); err != nil {
-				glog.Errorf("删除签到收集名单失败：%s", err.Error())
-			}
-		}()
-		stuIds := gconv.SliceInt(v.Slice())
-		// 取得已签到的所有学生的id,组装保存的内容
-		saveSlice := make([]model.CheckinDetailResp, len(stuIds))
-		for i, v := range stuIds {
-			saveSlice[i].CourseId = gconv.Int(courseId)
-			saveSlice[i].StuId = v
-		}
-		// 保存签到信息
-		if _, err = dao.CheckinDetail.Batch(len(stuIds)).Save(saveSlice); err != nil {
-			glog.Info("签到保存数据库错误 :%s", err.Error())
-		}
-	}(strconv.Itoa(req.CourseId), time.Duration(req.Duration), req.Name)
 	return nil
+}
+
+func (c *redisICheckinServiceCache) setFinishStu(stuId int, courseId int) (err error) {
+	r := g.Redis()
+	if _, err = r.Do("SADD", c.redisHeaderFinishSignIn+strconv.Itoa(courseId), stuId); err != nil {
+		return err
+	}
+	return nil
+}
+
+type simpleICheckinServiceCache struct {
+	keyCache  *gcache.Cache
+	finishMap *gmap.IntAnyMap
+}
+
+func (s *simpleICheckinServiceCache) removeFinishStu(courseId int) (err error) {
+	s.finishMap.Remove(courseId)
+	return nil
+}
+
+func (s *simpleICheckinServiceCache) getFinishStu(courseId int) (finishStuIds []int, err error) {
+	// 已经签到的学生，要经过几次转型
+	v := s.finishMap.Get(courseId)
+	set := v.(*gset.IntSet)
+	return set.Slice(), nil
+}
+
+func (s *simpleICheckinServiceCache) getSecretKey(courseId int) (secretKey string, err error) {
+	// 获取签到密钥
+	v, err := s.keyCache.Get(courseId)
+	if err != nil {
+		return "", err
+	}
+	// 空值
+	if v == nil {
+		return "", nil
+	}
+	return gconv.String(v), nil
+}
+
+func (s *simpleICheckinServiceCache) getTTL(courseId int) (expire int, err error) {
+	duration, err := s.keyCache.GetExpire(courseId)
+	if err != nil {
+		return 0, err
+	}
+	// 这个键不会过期，和redis调成一致
+	if duration == 0 {
+		duration = -1
+		// 这个键不存在，和redis调成一致
+	} else if duration == -1 {
+		duration = -2
+	}
+	return int(duration.Seconds()), err
+}
+
+func (s *simpleICheckinServiceCache) setSecretKey(secretKey string, duration int, courseId int) error {
+	if err := s.keyCache.Set(courseId, secretKey, time.Duration(duration)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *simpleICheckinServiceCache) setFinishStu(stuId int, courseId int) error {
+	// 获取set
+	set := s.finishMap.GetOrSet(courseId, gset.New(true))
+	// 把学生加进入
+	set.(*gset.IntSet).Add(stuId)
+	return nil
+}
+
+func newCache() (c ICheckinServiceCache) {
+	if g.Cfg().GetBool("server.Multiple") {
+		c = &redisICheckinServiceCache{redisHeaderFinishSignIn: "code.platform:signin:finish:",
+			redisHeaderSecretKey: "code.platform:signin:key:"}
+	} else {
+		c = &simpleICheckinServiceCache{
+			keyCache:  gcache.New(),
+			finishMap: gmap.NewIntAnyMap(false),
+		}
+	}
+	return c
 }

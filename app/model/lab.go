@@ -7,6 +7,7 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
+	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/gtime"
 )
 
@@ -51,4 +52,10 @@ type ListLabReq struct {
 	PageCurrent int
 	PageSize    int
 	CourseId    int
+}
+
+type SummitReportReq struct {
+	Report *ghttp.UploadFile
+	LabId  int
+	StuId  int
 }

@@ -26,7 +26,9 @@ func (s *labService) Insert(req *model.InsertLabReq) (err error) {
 		return err
 	}
 	if req.AttachmentUrl != nil {
-		go FileService.RemoveDirtyFile(*req.AttachmentUrl)
+		go func() {
+			FileService.RemoveDirtyFile(*req.AttachmentUrl)
+		}()
 	}
 	return nil
 }
@@ -111,8 +113,49 @@ func (s *labService) Delete(userId int, labId int) (err error) {
 	if userId != teacherId.Int() {
 		return code.AuthError
 	}
-	if _, err := dao.Lab.WherePri(labId).Delete(); err != nil {
+	if _, err = dao.Lab.WherePri(labId).Delete(); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *labService) summitReport(req *model.SummitReportReq) (err error) {
+	// 上传到文件服务器
+	successFlag := true
+	url, err := FileService.UploadPdf(req.Report)
+	// 移除脏文件
+	defer func(flag *bool) {
+		if *flag {
+			go FileService.RemoveDirtyFile(url)
+		}
+	}(&successFlag)
+	one, err := dao.LabSubmit.Where(dao.LabSubmit.Columns.LabId, req.LabId).And(dao.LabSubmit.Columns.UserId).
+		FindOne(dao.LabSubmit.Columns.ReportUrl)
+	if err != nil {
+		return err
+	}
+	if one != nil {
+		// 原来没有记录，插入新记录
+		var SaveModel = new(model.LabSubmit)
+		SaveModel.UserId = req.StuId
+		SaveModel.LabId = req.LabId
+		SaveModel.ReportUrl = url
+		if _, err = dao.LabSubmit.OmitEmpty().Insert(SaveModel); err != nil {
+			successFlag = false
+			return err
+		}
+	} else {
+		// 保存新报告
+		if _, err = dao.LabSubmit.Where(dao.LabSubmit.Columns.LabId, req.LabId).And(dao.LabSubmit.Columns.UserId, req.StuId).
+			Save(dao.LabSubmit.Columns.ReportUrl, url); err != nil {
+			successFlag = false
+			return err
+		}
+		// 移除旧文件
+		if one.ReportUrl != "" {
+			//goland:noinspection GoUnhandledErrorResult
+			go FileService.RemoveObject(one.ReportUrl)
+		}
 	}
 	return nil
 }

@@ -21,6 +21,7 @@ type CourseCommentResp struct {
 	CommentText     string      `orm:"comment_text"              json:"comment_text"`      // 评论内容，限120字
 	Pid             int         `orm:"pid"                       json:"pid"`               // 父评论id，主评时为空
 	UserId          int         `orm:"user_id"                   json:"user_id"`           // 发评论的用户id
+	UserAvatarUrl   int         `orm:"user_id"                   json:"user_avatar_url"`   // 发评论的用户id
 	Username        string      `orm:"username"                  json:"username"`          // 回复者的用户名
 	ReplyUsername   string      `orm:"reply_username"            json:"reply_username"`    // 被回复者的用户名
 	ReplyId         int         `orm:"reply_id"                  json:"reply_id"`          // 回复的评论id
@@ -29,8 +30,8 @@ type CourseCommentResp struct {
 }
 
 type CourseCommentEntity struct {
-	Comment       *CourseComment   `json:"comment"`        // 评论主体
-	ReplyComments []*CourseComment `json:"reply_comments"` // 子评论
+	Comment       *CourseCommentResp   `json:"comment"`        // 评论主体
+	ReplyComments []*CourseCommentResp `json:"reply_comments"` // 子评论
 }
 
 // CourseCommentEntityPageResp 返回集

@@ -10,7 +10,7 @@ import (
 
 // CourseRecourse is the golang structure for table course_recourse.
 type CourseRecourse struct {
-	CourseRecourseId int         `orm:"course_recourse_id,primary" json:"course_recourse_id"` //
+	CourseRecourseId int         `orm:"course_recourse_id,primary" json:"course_recourse_id"` // id
 	CourseId         int         `orm:"course_id"                  json:"course_id"`          // 课程id
 	Title            string      `orm:"title"                      json:"title"`              // 标题，限20字
 	Content          string      `orm:"content"                    json:"content"`            // 公告内容，无字数限制

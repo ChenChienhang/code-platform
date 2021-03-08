@@ -31,6 +31,7 @@ type labCommentColumns struct {
 	Pid           string // 父评论id，主评时为0
 	UserId        string // 发评论的用户id
 	Username      string // 被回复的用户名称
+	UserAvatarUrl string // 评论者头像
 	ReplyId       string // 被回复的用户id
 	ReplyUsername string // 被回复的用户名称
 	CreatedAt     string // 创建时间
@@ -50,6 +51,7 @@ var (
 			Pid:           "pid",
 			UserId:        "user_id",
 			Username:      "username",
+			UserAvatarUrl: "user_avatar_url",
 			ReplyId:       "reply_id",
 			ReplyUsername: "reply_username",
 			CreatedAt:     "created_at",

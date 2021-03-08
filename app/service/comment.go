@@ -6,6 +6,7 @@ package service
 import (
 	"code-platform/app/dao"
 	"code-platform/app/model"
+	"code-platform/library/common/code"
 	"code-platform/library/common/response"
 	"github.com/gogf/gf/database/gdb"
 	"github.com/gogf/gf/frame/g"
@@ -18,29 +19,29 @@ var CourseCommentService = new(courseCommentService)
 type courseCommentService struct{}
 
 func (s *courseCommentService) ListCourseCommentByCourseId(req *model.ListCourseCommentReq) (*model.CourseCommentEntityPageResp, error) {
-	var comments []*model.CourseCommentEntity
+	var CommentResps = make([]*model.CourseCommentEntity, 0)
 	// 分页，排序
 	if err := dao.CourseComment.Page(req.PageCurrent, req.PageSize).Order(dao.CourseComment.Columns.CreatedAt+" desc").
 		// 主评，对应课程
 		Where(dao.CourseComment.Columns.Pid, 0).And(dao.CourseComment.Columns.CourseId, req.CourseId).
 		FieldsEx(dao.CourseComment.Columns.DeletedAt).
-		ScanList(&comments, "Comment"); err != nil {
+		ScanList(&CommentResps, "Comment"); err != nil {
 		return nil, err
 	}
 
 	// 查子评论
 	if err := dao.CourseComment.
 		Where(dao.CourseComment.Columns.Pid,
-			gdb.ListItemValuesUnique(comments, "Comment", "CourseCommentId")).
+			gdb.ListItemValuesUnique(CommentResps, "Comment", "CourseCommentId")).
 		Order(dao.CourseComment.Columns.CreatedAt+" desc").
 		FieldsEx(dao.CourseComment.Columns.DeletedAt).
-		ScanList(&comments, "ReplyComments", "Comment", "pid:CourseCommentId"); err != nil {
+		ScanList(&CommentResps, "ReplyComments", "Comment", "pid:CourseCommentId"); err != nil {
 		return nil, err
 	}
 
-	for _, v := range comments {
+	for _, v := range CommentResps {
 		if v.ReplyComments == nil {
-			v.ReplyComments = make([]*model.CourseComment, 0)
+			v.ReplyComments = make([]*model.CourseCommentResp, 0)
 		}
 	}
 
@@ -54,9 +55,9 @@ func (s *courseCommentService) ListCourseCommentByCourseId(req *model.ListCourse
 
 	// 分页信息整合
 	resp := &model.CourseCommentEntityPageResp{
-		Records: comments,
+		Records: CommentResps,
 		PageInfo: &response.PageInfo{
-			Size:    len(comments),
+			Size:    len(CommentResps),
 			Total:   count,
 			Current: req.PageCurrent,
 			Pages:   int(math.Ceil(float64(count) / float64(req.PageSize))),
@@ -65,7 +66,7 @@ func (s *courseCommentService) ListCourseCommentByCourseId(req *model.ListCourse
 }
 
 func (s *courseCommentService) ListLabCommentByLabId(req *model.ListLabCommentReq) (*model.LabCommentEntityPageResp, error) {
-	var comments []*model.LabCommentEntity
+	var comments = make([]*model.LabCommentEntity, 0)
 	// 分页，排序
 	if err := dao.LabComment.Page(req.PageCurrent, req.PageSize).Order(dao.LabComment.Columns.CreatedAt+" desc").
 		// 主评，对应课程
@@ -85,7 +86,7 @@ func (s *courseCommentService) ListLabCommentByLabId(req *model.ListLabCommentRe
 	}
 	for _, v := range comments {
 		if v.ReplyComments == nil {
-			v.ReplyComments = make([]*model.LabComment, 0)
+			v.ReplyComments = make([]*model.LabCommentResp, 0)
 		}
 	}
 
@@ -139,10 +140,16 @@ func (s *courseCommentService) InsertCourseComment(req *model.InsertCourseCommen
 		courseComment.ReplyUsername = tmp.Username
 	}
 	// 回复评论的用户昵称
-	if UserNickname, err := dao.SysUser.WherePri(courseComment.UserId).FindValue(dao.SysUser.Columns.NickName); err != nil {
+	if one, err := dao.SysUser.WherePri(courseComment.UserId).
+		Fields(dao.SysUser.Columns.NickName,
+			dao.SysUser.Columns.AvatarUrl).
+		FindOne(); err != nil {
 		return err
+	} else if one == nil {
+		return code.UserNotExistError
 	} else {
-		courseComment.Username = UserNickname.String()
+		courseComment.Username = one.NickName
+		courseComment.UserAvatarUrl = one.AvatarUrl
 	}
 
 	// 保存
@@ -180,10 +187,16 @@ func (s *courseCommentService) InsertLabComment(req *model.InsertLabCommentReq) 
 		labComment.ReplyUsername = replyComment.Username
 	}
 	// 回复评论的用户昵称
-	if UserNickname, err := dao.SysUser.WherePri(labComment.UserId).FindValue(dao.SysUser.Columns.NickName); err != nil {
+	if one, err := dao.SysUser.WherePri(labComment.UserId).
+		Fields(dao.SysUser.Columns.NickName,
+			dao.SysUser.Columns.AvatarUrl).
+		FindOne(); err != nil {
 		return err
+	} else if one == nil {
+		return code.UserNotExistError
 	} else {
-		labComment.Username = UserNickname.String()
+		labComment.Username = one.NickName
+		labComment.UserAvatarUrl = one.AvatarUrl
 	}
 	// 保存
 	if _, err = dao.LabComment.Insert(labComment); err != nil {

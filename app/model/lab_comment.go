@@ -16,21 +16,22 @@ type LabComment internal.LabComment
 // Fill with you ideas below.
 
 type LabCommentResp struct {
-	LabCommentId  int         `orm:"lab_comment_id,primary" json:"lab_comment_id"` // 主键
-	LabId         int         `orm:"lab_id"                 json:"lab_id"`         // 实验id
-	CommentText   string      `orm:"comment_text"           json:"comment_text"`   // 评论内容，限120字
-	Pid           int         `orm:"pid"                    json:"pid"`            // 父评论id，主评时为0
-	UserId        int         `orm:"user_id"                json:"user_id"`        // 发评论的用户id
-	Username      string      `orm:"username"               json:"username"`       // 被回复的用户名称
-	ReplyId       int         `orm:"reply_id"               json:"reply_id"`       // 被回复的用户id
-	ReplyUsername string      `orm:"reply_username"         json:"reply_username"` // 被回复的用户名称
-	CreatedAt     *gtime.Time `orm:"created_at"             json:"created_at"`     // 创建时间
-	UpdatedAt     *gtime.Time `orm:"updated_at"             json:"updated_at"`     // 更新时间
+	LabCommentId  int         `orm:"lab_comment_id,primary" json:"lab_comment_id"`  // 主键
+	LabId         int         `orm:"lab_id"                 json:"lab_id"`          // 实验id
+	CommentText   string      `orm:"comment_text"           json:"comment_text"`    // 评论内容，限120字
+	Pid           int         `orm:"pid"                    json:"pid"`             // 父评论id，主评时为0
+	UserId        int         `orm:"user_id"                json:"user_id"`         // 发评论的用户id
+	Username      string      `orm:"username"               json:"username"`        // 被回复的用户名称
+	UserAvatarUrl int         `orm:"user_id"                json:"user_avatar_url"` // 发评论的用户id
+	ReplyId       int         `orm:"reply_id"               json:"reply_id"`        // 被回复的用户id
+	ReplyUsername string      `orm:"reply_username"         json:"reply_username"`  // 被回复的用户名称
+	CreatedAt     *gtime.Time `orm:"created_at"             json:"created_at"`      // 创建时间
+	UpdatedAt     *gtime.Time `orm:"updated_at"             json:"updated_at"`      // 更新时间
 }
 
 type LabCommentEntity struct {
-	Comment       *LabCommentResp `json:"comment"`        // 评论主体
-	ReplyComments []*LabComment   `json:"reply_comments"` // 子评论
+	Comment       *LabCommentResp   `json:"comment"`        // 评论主体
+	ReplyComments []*LabCommentResp `json:"reply_comments"` // 子评论
 }
 
 // LabCommentEntityPageResp 返回集
