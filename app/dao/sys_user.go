@@ -6,6 +6,7 @@ package dao
 
 import (
 	"code-platform/app/dao/internal"
+	"github.com/gogf/gf/frame/g"
 )
 
 // sysUserDao is the manager for logic model data accessing
@@ -23,3 +24,13 @@ var (
 )
 
 // Fill with you ideas below.
+
+func (s *sysUserDao) GetRole(userId int) (int, error) {
+	role, err := g.Table("sys_user").InnerJoin("sys_user_role").
+		Where("sys_user.user_id =", userId).And("sys_user.user_id = sys_user_role.user_id").
+		FindValue("sys_user_role.role_id")
+	if err != nil {
+		return 0, err
+	}
+	return role.Int(), nil
+}

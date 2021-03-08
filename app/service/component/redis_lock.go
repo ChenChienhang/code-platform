@@ -13,11 +13,15 @@ import (
 
 var RedisLock = newRedisLock()
 
-func newRedisLock() *redsync.Redsync {
-	client := goredislib.NewClient(&goredislib.Options{
-		Addr:     fmt.Sprintf("%s:%s", g.Cfg().GetString("redis.host"), g.Cfg().GetString("redis.port")),
-		Password: g.Cfg().GetString("redis.pass"),
-	})
-	pool := goredis.NewPool(client)
-	return redsync.New(pool)
+func newRedisLock() (r *redsync.Redsync) {
+	if g.Cfg().GetBool("server.Multiple") {
+		client := goredislib.NewClient(&goredislib.Options{
+			Addr:     fmt.Sprintf("%s:%s", g.Cfg().GetString("redis.host"), g.Cfg().GetString("redis.port")),
+			Password: g.Cfg().GetString("redis.pass"),
+		})
+		pool := goredis.NewPool(client)
+		return redsync.New(pool)
+	} else {
+		return nil
+	}
 }

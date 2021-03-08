@@ -6,12 +6,12 @@ package service
 import (
 	"code-platform/app/dao"
 	"code-platform/app/model"
-	"code-platform/app/service/component"
 	"code-platform/library/common/code"
 	"code-platform/library/common/response"
 	"code-platform/library/common/utils"
 	"fmt"
 	"github.com/gogf/gf/frame/g"
+	"github.com/gogf/gf/os/gcache"
 	"github.com/gogf/gf/os/gtime"
 	"github.com/gogf/gf/util/grand"
 	"golang.org/x/crypto/bcrypt"
@@ -26,12 +26,15 @@ const (
 	Student
 )
 
-var (
-	UserService        = new(userService)
-	redisVerCodeHeader = "code.platform:verification.code:"
-)
+var UserService = newUserService()
 
 type userService struct {
+	IUserServiceCache
+}
+
+func newUserService() (s *userService) {
+	s = &userService{newIUserServiceCache()}
+	return s
 }
 
 // SignUpForStu 注册
@@ -57,15 +60,15 @@ func (s *userService) SignUpForStu(req *model.SignUpReq) error {
 		return err
 	}
 	// 把id查出来
-	if userId, err := dao.SysUser.Where(dao.SysUser.Columns.Email, req.Email).
-		FindValue(dao.SysUser.Columns.UserId); err != nil {
-		return err
-	} else {
-		// 加入casbin权限
-		if err = addGroupPolicy(Student, userId.Int()); err != nil {
-			return err
-		}
-	}
+	//if userId, err := dao.SysUser.Where(dao.SysUser.Columns.Email, req.Email).
+	//	FindValue(dao.SysUser.Columns.UserId); err != nil {
+	//	return err
+	//} else {
+	// 加入casbin权限
+	//if err = addGroupPolicy(Student, userId.Int()); err != nil {
+	//	return err
+	//}
+	//}
 	return nil
 }
 
@@ -89,15 +92,15 @@ func (s *userService) SignUpForTeacher(req *model.SignUpReq) error {
 		return err
 	}
 	// 把id查出来
-	if userId, err := dao.SysUser.
-		Where(dao.SysUser.Columns.Email, req.Email).
-		FindValue(dao.SysUser.Columns.UserId); err != nil {
-		return err
-	} else {
-		if err = addGroupPolicy(Teacher, userId.Int()); err != nil {
-			return err
-		}
-	}
+	//if userId, err := dao.SysUser.
+	//	Where(dao.SysUser.Columns.Email, req.Email).
+	//	FindValue(dao.SysUser.Columns.UserId); err != nil {
+	//	return err
+	//} else {
+	//	if err = addGroupPolicy(Teacher, userId.Int()); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 
@@ -153,9 +156,57 @@ func (s *userService) Update(req *model.UserUpdateReq) error {
 		}
 	}
 	// 保存
-	if _, err := dao.SysUser.Save(req); err != nil {
+	if tx, err := g.DB().Begin(); err != nil {
 		removeFlag = false
 		return err
+	} else {
+		if _, err = dao.SysUser.TX(tx).OmitEmpty().Save(req); err != nil {
+			return err
+		}
+		// 改了真名
+		if req.RealName != nil {
+			// 课程里的开课老师名字可能要改
+			if _, err = dao.Course.TX(tx).OmitEmpty().Data(dao.Course.Columns.TeacherName, req.RealName).
+				Where(dao.Course.Columns.TeacherId, req.UserId).Save(); err != nil {
+				return err
+			}
+		}
+		// 改了昵称
+		if req.NickName != nil {
+			// 评论里的名字要改
+			if _, err = dao.CourseComment.TX(tx).OmitEmpty().Data(dao.CourseComment.Columns.Username, req.NickName).
+				Where(dao.CourseComment.Columns.UserId, req.UserId).Save(); err != nil {
+				return err
+			}
+			if _, err = dao.CourseComment.TX(tx).OmitEmpty().Data(dao.CourseComment.Columns.ReplyUsername, req.NickName).
+				Where(dao.CourseComment.Columns.ReplyId, req.UserId).Save(); err != nil {
+				return err
+			}
+			if _, err = dao.LabComment.TX(tx).OmitEmpty().Data(dao.LabComment.Columns.Username, req.NickName).
+				Where(dao.LabComment.Columns.UserId, req.UserId).Save(); err != nil {
+				return err
+			}
+			if _, err = dao.LabComment.TX(tx).OmitEmpty().Data(dao.LabComment.Columns.ReplyUsername, req.NickName).
+				Where(dao.LabComment.Columns.ReplyId, req.UserId).Save(); err != nil {
+				return err
+			}
+		}
+		// 修改了头像
+		if req.AvatarUrl != nil {
+			if _, err = dao.CourseComment.TX(tx).OmitEmpty().Data(dao.CourseComment.Columns.UserAvatarUrl, req.AvatarUrl).
+				Where(dao.CourseComment.Columns.UserId, req.UserId).Save(); err != nil {
+				return err
+			}
+			if _, err = dao.LabComment.TX(tx).OmitEmpty().Data(dao.LabComment.Columns.UserAvatarUrl, req.AvatarUrl).
+				Where(dao.LabComment.Columns.UserId, req.UserId).Save(); err != nil {
+				return err
+			}
+		}
+		// 提交
+		if err = tx.Commit(); err != nil {
+			removeFlag = false
+			return err
+		}
 	}
 	return nil
 }
@@ -166,20 +217,14 @@ func (s *userService) Update(req *model.UserUpdateReq) error {
 // @return error
 // @date 2021-01-09 00:12:55
 func (s *userService) SendVerificationCode(emailAddr string) error {
-	//获取redis连接
-	r := g.Redis()
-
-	//redis键前缀
-	redisHeader := redisVerCodeHeader + emailAddr
 
 	//生成6位随机数
 	verificationCode := grand.Digits(6)
 
 	// 存入redis，15分钟有效期
-	if _, err := r.DoWithTimeout(15*time.Minute, "SET", redisHeader, verificationCode); err != nil {
+	if err := s.IUserServiceCache.SetV(15*time.Minute, emailAddr, verificationCode); err != nil {
 		return err
 	}
-
 	// 准备邮件内容
 	emailBody := fmt.Sprintf(`<div style="background-color:#ECECEC; padding: 35px;">
     <table cellpadding="0" align="center"
@@ -255,16 +300,15 @@ func (s *userService) ResetPassword(req *model.ResetPasswordReq) error {
 // @params verificationCode 验证码
 // @return error
 // @date 2021-01-13 20:50:40
-func (s *userService) checkVerificationCode(emailAddr string, verificationCode string) error {
-	//redis键前缀
-	redisHeader := redisVerCodeHeader + emailAddr
-	// redis取出验证码
-	r := g.Redis()
-	v, err := r.DoVar("GET", redisHeader)
+func (s *userService) checkVerificationCode(email string, verificationCode string) error {
+	v, err := s.GetV(email)
 	if err != nil {
-		return err
+		return nil
 	}
-	if v.IsEmpty() || v.String() != verificationCode {
+	if v == "" {
+		return code.VerificationCodeNotExistError
+	}
+	if v != verificationCode {
 		return code.VerificationCodeError
 	}
 	return nil
@@ -364,14 +408,80 @@ func (s *userService) ListUser(current, size int) (*model.SysUserPageResp, error
 //	return resp, nil
 //}
 
-// AddPolicy 添加新用户授权policy
-// @receiver s
-// @params role 角色，常量
-// @params userId
-// @date 2021-01-15 00:12:43
-func addGroupPolicy(role role, userId int) error {
-	if _, err := component.Enforcer.AddGroupingPolicy(userId, role); err != nil {
-		return err
+type IUserServiceCache interface {
+	SetV(duration time.Duration, key string, value interface{}) (err error)
+	GetV(key string) (value interface{}, err error)
+}
+
+func newIUserServiceCache() (c IUserServiceCache) {
+	if g.Cfg().GetBool("server.Multiple") {
+		c = &userServiceRedisCache{
+			key: "code.platform:verification.code:",
+		}
+		return c
+	} else {
+		c = &userServiceSimpleCache{
+			gcache.New(),
+		}
+		return c
+	}
+}
+
+type userServiceRedisCache struct {
+	key string
+}
+
+func (u *userServiceRedisCache) SetV(duration time.Duration, key string, value interface{}) (err error) {
+	r := g.Redis()
+	if duration == -1 {
+		if _, err = r.Do("SET", key, value); err != nil {
+			return err
+		}
+	} else {
+		if _, err = r.DoWithTimeout(duration, "SET", key, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (u *userServiceRedisCache) GetV(key string) (value interface{}, err error) {
+	r := g.Redis()
+	v, err := r.DoVar("GET", key)
+	if err != nil {
+		return "", err
+	}
+	if v.IsNil() {
+		return "", nil
+	}
+	return v.String(), nil
+}
+
+type userServiceSimpleCache struct {
+	*gcache.Cache
+}
+
+func (u *userServiceSimpleCache) SetV(duration time.Duration, key string, value interface{}) (err error) {
+	if duration == -1 {
+		if err = u.Set(0, value, duration); err != nil {
+			return err
+		}
+	} else {
+		if err = u.Set(key, value, duration); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (u *userServiceSimpleCache) GetV(key string) (value interface{}, err error) {
+	v, err := u.GetVar(key)
+	if err != nil {
+		return "", err
+	}
+	if v.IsNil() {
+		return "", nil
+	}
+	return v.String(), nil
 }

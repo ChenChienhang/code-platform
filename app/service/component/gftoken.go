@@ -8,31 +8,45 @@ import (
 	"code-platform/app/model"
 	"code-platform/library/common/code"
 	"code-platform/library/common/response"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/goflyfox/gtoken/gtoken"
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/glog"
 	"github.com/gogf/gf/os/gtime"
+	"github.com/gogf/gf/text/gregex"
 	"github.com/gogf/gf/util/gconv"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
-var GfToken = &gtoken.GfToken{
-	CacheMode:       2,
-	LoginPath:       "/login",
-	LogoutPath:      "/logout",
-	LoginBeforeFunc: LoginBeforeFunc,
-	LoginAfterFunc:  LoginAfterFunc,
-	LogoutAfterFunc: LogoutAfterFunc,
-	AuthAfterFunc:   AuthAfterFunc,
-	AuthExcludePaths: g.SliceStr{
-		"/web/user/nickname",
-		"/web/user/signup",
-		"/web/user/email/*",
-		"/web/user/password",
-		"/web/user/verificationCode",
-		"/web/user/test/*",
-	},
+var GfToken = newGfToken()
+
+func newGfToken() *gtoken.GfToken {
+	initRbac()
+	var cacheMode int8
+	if g.Cfg().GetBool("server.Multiple") {
+		cacheMode = 2
+	} else {
+		cacheMode = 1
+	}
+	return &gtoken.GfToken{
+		CacheMode:       cacheMode,
+		LoginPath:       "/login",
+		LogoutPath:      "/logout",
+		LoginBeforeFunc: LoginBeforeFunc,
+		LoginAfterFunc:  LoginAfterFunc,
+		LogoutAfterFunc: LogoutAfterFunc,
+		AuthAfterFunc:   AuthAfterFunc,
+		AuthExcludePaths: g.SliceStr{
+			"/web/user/nickname",
+			"/web/user/signup",
+			"/web/user/email/*",
+			"/web/user/password",
+			"/web/user/verificationCode",
+			"/web/user/test/*",
+		},
+	}
 }
 
 // LogoutAfterFunc 重定义退登结果集
@@ -55,9 +69,9 @@ func AuthAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	//存在令牌
 	if respData.Success() {
 		// 鉴权
-		if isAuth, err := authenticate(respData.GetString("userKey"), r.URL.Path, r.Method); err != nil {
+		if ok, err := authenticate(respData.GetString("userKey"), r.URL.Path, r.Method); err != nil {
 			response.Exit(r, code.OtherError)
-		} else if !isAuth {
+		} else if !ok {
 			// 权限不足
 			response.Exit(r, code.PermissionError)
 		}
@@ -93,12 +107,29 @@ func AuthAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 // @return bool
 // @return error
 // @date 2021-01-04 21:58:46
-func authenticate(userId string, url string, method string) (bool, error) {
-	res, err := Enforcer.Enforce(userId, url, method)
-	if err != nil {
+func authenticate(userId string, url string, method string) (ok bool, err error) {
+	type Api struct {
+		Api    string
+		Method string
+	}
+	apis := make([]Api, 0)
+	if err = g.Table("sys_api").InnerJoin("sys_api_role").InnerJoin("sys_user_role").
+		InnerJoin("sys_user").InnerJoin("sys_role").Cache(1*time.Hour).
+		Where("sys_user.user_id =", userId).And("sys_user.user_id = sys_user_role.user_id").
+		And("sys_user_role.role_id = sys_api_role.role_id").And("sys_api_role.api_id = sys_api.api_id").
+		Fields("api", "method").Scan(&apis); err != nil {
 		return false, err
 	}
-	return res, nil
+
+	for _, v := range apis {
+		// 用正则匹配,在列表里找有没有权限的
+		isMatch := gregex.IsMatchString(v.Api, url) && v.Method == method
+		if isMatch {
+			return true, nil
+		}
+	}
+	// 没有权限
+	return false, nil
 }
 
 // @summary 登录
@@ -128,8 +159,7 @@ func LoginBeforeFunc(r *ghttp.Request) (string, interface{}) {
 	}
 
 	// 校验密码 密码错误
-	if //goland:noinspection GoNilness
-	err = bcrypt.CompareHashAndPassword([]byte(one.Password), []byte(req.Password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(one.Password), []byte(req.Password)); err != nil {
 		response.Exit(r, code.PasswordError)
 	}
 
@@ -146,6 +176,76 @@ func LoginAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 		response.Exit(r, code.LoginError)
 	} else {
 		// 返回token
-		response.Succ(r, g.Map{"token": respData.GetString("token")})
+		avatarUrl, err := dao.SysUser.WherePri(respData.GetInt("userKey")).FindValue(dao.SysUser.Columns.AvatarUrl)
+		if err != nil {
+			response.Exit(r, err)
+		}
+		role, err := dao.SysUser.GetRole(respData.GetInt("userKey"))
+		if err != nil {
+			response.Exit(r, err)
+		}
+		response.Succ(r, g.Map{
+			"user_id":    respData.GetInt("userKey"),
+			"role":       role,
+			"token":      respData.GetString("token"),
+			"avatar_url": avatarUrl,
+		})
+	}
+}
+
+func initRbac() {
+	file, err := excelize.OpenFile("./config/rbac.xlsx")
+	if err != nil {
+		return
+	}
+	rows, err := file.Rows("front_api")
+	if err != nil {
+		return
+	}
+	type api struct {
+		ApiId       int
+		Api         string
+		Method      string
+		Description string
+	}
+	apis := make([]api, 0)
+	for rows.Next() {
+		row, err := rows.Columns()
+		if err != nil {
+			return
+		}
+		apis = append(apis, api{
+			ApiId:       gconv.Int(row[0]),
+			Api:         row[1],
+			Method:      row[2],
+			Description: row[3],
+		})
+	}
+	if _, err = g.Table("sys_api").Data(apis).Batch(len(apis)).Save(); err != nil {
+		return
+	}
+	rows, err = file.Rows("role_api")
+	if err != nil {
+		return
+	}
+	type roleApi struct {
+		ApiRoleId int
+		RoleId    string
+		ApiId     string
+	}
+	roleApis := make([]roleApi, 0)
+	for rows.Next() {
+		row, err := rows.Columns()
+		if err != nil {
+			return
+		}
+		roleApis = append(roleApis, roleApi{
+			ApiRoleId: gconv.Int(row[0]),
+			RoleId:    row[1],
+			ApiId:     row[2],
+		})
+	}
+	if _, err = g.Table("sys_api_role").Data(roleApis).Batch(len(roleApis)).Save(); err != nil {
+		return
 	}
 }
