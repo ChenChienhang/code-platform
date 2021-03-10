@@ -23,7 +23,7 @@ type courseService struct{}
 // @return *model.CoursePageResp
 // @return error
 // @date 2021-01-15 19:46:37
-func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (resp *model.CoursePageResp, err error) {
+func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (resp *response.PageResp, err error) {
 	// 按创建时间降序
 	d := dao.Course.
 		// 创建时间降序
@@ -46,7 +46,7 @@ func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (re
 	}
 
 	// 分页信息整合
-	resp = &model.CoursePageResp{
+	resp = &response.PageResp{
 		Records: records,
 		PageInfo: &response.PageInfo{
 			Size:    len(records),
@@ -65,14 +65,14 @@ func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (re
 // @return *model.CoursePageResp
 // @return error
 // @date 2021-01-15 19:46:37
-func (s *courseService) ListCourseByStuId(req *model.ListCourseByStuIdReq) (resp *model.CoursePageResp, err error) {
+func (s *courseService) ListCourseByStuId(req *model.ListCourseByStuIdReq) (resp *response.PageResp, err error) {
 	courseIds, count, err := dao.Course.ListCourseIdByStuId(req.PageCurrent, req.PageSize, req.StudentId)
 	if err != nil {
 		return nil, err
 	}
 	// 按创建时间降序
 	records := make([]*model.CourseResp, 0)
-	if err := dao.Course.Order(dao.Course.Columns.CreatedAt+" desc").
+	if err = dao.Course.Order(dao.Course.Columns.CreatedAt+" desc").
 		// 剔除不必要字段
 		FieldsEx(dao.Course.Columns.DeletedAt, dao.Course.Columns.CourseDes, dao.Course.Columns.SecretKey).
 		Where(dao.Course.Columns.CourseId, courseIds).Scan(&records); err != nil {
@@ -80,7 +80,7 @@ func (s *courseService) ListCourseByStuId(req *model.ListCourseByStuIdReq) (resp
 	}
 
 	// 分页信息整合
-	resp = &model.CoursePageResp{
+	resp = &response.PageResp{
 		Records: records,
 		PageInfo: &response.PageInfo{
 			Size:    len(records),
@@ -138,7 +138,7 @@ func (s *courseService) AttendCourse(req *model.AttendCourseReq) (err error) {
 // @return *model.SysUserPageResp
 // @return error
 // @date 2021-02-06 23:16:34
-func (s *courseService) ListStuByCourseId(req *model.ListStuByCourseIdReq) (resp *model.SysUserPageResp, err error) {
+func (s *courseService) ListStuByCourseId(req *model.ListStuByCourseIdReq) (resp *response.PageResp, err error) {
 	// 查出所有修读该门课程的学生学号
 	userIds, count, err := dao.Course.ListUserIdByCourseId(req.PageCurrent, req.PageSize, req.CourseId)
 	if err != nil {
@@ -153,7 +153,7 @@ func (s *courseService) ListStuByCourseId(req *model.ListStuByCourseIdReq) (resp
 		return nil, err
 	}
 
-	resp = &model.SysUserPageResp{
+	resp = &response.PageResp{
 		Records: records,
 		PageInfo: &response.PageInfo{
 			Size:    len(records),
@@ -210,7 +210,7 @@ func (s *courseService) InsertCourse(req *model.InsertCourseReq) (err error) {
 	return nil
 }
 
-func (s *courseService) SearchList(req *model.SearchListByCourseNameReq) (resp *model.CoursePageResp, err error) {
+func (s *courseService) SearchList(req *model.SearchListByCourseNameReq) (resp *response.PageResp, err error) {
 	// 模糊搜索
 	d := dao.Course.Where(dao.Course.Columns.CourseName+" like ?", "%"+req.CourseName+"%").
 		// 字段剔除
@@ -227,7 +227,7 @@ func (s *courseService) SearchList(req *model.SearchListByCourseNameReq) (resp *
 
 	}
 	// 分页信息整合
-	resp = &model.CoursePageResp{
+	resp = &response.PageResp{
 		Records: records,
 		PageInfo: &response.PageInfo{
 			Size:    len(records),

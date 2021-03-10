@@ -44,7 +44,7 @@ func (s *courseResourceService) Update(req *model.UpdateCourseRecourseReq) (err 
 	return nil
 }
 
-func (s *courseResourceService) List(req *model.ListCourseResourceReq) (resp *model.CourseRecoursePageResp, err error) {
+func (s *courseResourceService) List(req *model.ListCourseResourceReq) (resp *response.PageResp, err error) {
 	d := dao.CourseRecourse.Where(dao.CourseRecourse.Columns.CourseId, req.CourseId).
 		FieldsEx(dao.CourseRecourse.Columns.DeletedAt, dao.CourseRecourse.Columns.CourseId, dao.CourseRecourse.Columns.AttachmentUrl).
 		Order(dao.CourseRecourse.Columns.CreatedAt + " desc")
@@ -57,7 +57,7 @@ func (s *courseResourceService) List(req *model.ListCourseResourceReq) (resp *mo
 		return nil, err
 	}
 
-	resp = &model.CourseRecoursePageResp{
+	resp = &response.PageResp{
 		Records: records,
 		PageInfo: &response.PageInfo{
 			Size:    len(records),

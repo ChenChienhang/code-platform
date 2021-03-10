@@ -6,7 +6,6 @@ package model
 
 import (
 	"code-platform/app/model/internal"
-	"code-platform/library/common/response"
 	"github.com/gogf/gf/container/gmap"
 )
 
@@ -36,9 +35,4 @@ type CheckinDetailResp struct {
 	CourseId        int    `json:"course_id"`         // 课程id
 	CheckinRecordId int    `json:"checkin_record_id"` // 签到id
 	IsCheckIn       bool   `json:"is_check_in"`       // 是否签到
-}
-
-type CheckinDetailPageResp struct {
-	Records  []*CheckinDetailResp `json:"records"`
-	PageInfo *response.PageInfo   `json:"page_info"`
 }

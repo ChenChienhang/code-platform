@@ -24,6 +24,16 @@ type PageInfo struct {
 	Pages   int `json:"pages"`   // 总共页码
 }
 
+type PageResp struct {
+	Records  interface{} `json:"records"`
+	PageInfo *PageInfo   `json:"page_info"`
+}
+
+type PageReq struct {
+	PageCurrent int
+	PageSize    int
+}
+
 // Succ 成功返回结果集
 // @params r
 // @params data

@@ -50,6 +50,7 @@ func init() {
 			group.DELETE("/course", api.CommentController.DeleteCourseComment)
 			group.DELETE("/lab", api.CommentController.DeleteLabComment)
 		})
+		// 课程相关
 		group.Group("/course", func(group *ghttp.RouterGroup) {
 			// 根据课程id查询课程信息,教师，学生,已添加
 			group.GET("/{courseId}", api.CourseController.GetCourse)
@@ -85,6 +86,48 @@ func init() {
 			group.DELETE("/record", api.CheckInController.DeleteRecordsDetails)
 			// 修改签到详情
 			group.PUT("/detail", api.CheckInController.UpdateCheckinDetail)
+			// 导出签到表
+			group.GET("/export/{courseId}", api.CheckInController.ExportCheckinRecords)
+		})
+		// 实验相关
+		group.Group("/lab", func(group *ghttp.RouterGroup) {
+			// 新增实验
+			group.POST("/", api.LabController.Insert)
+			// 修改实验
+			group.PUT("/", api.LabController.Update)
+			// 列表
+			group.GET("/", api.LabController.List)
+			// 获取实验详细信息
+			group.GET("/{labId}", api.LabController.GetOne)
+			// 删除实验
+			group.DELETE("/{labId}", api.LabController.Delete)
+		})
+		group.Group("/upload", func(group *ghttp.RouterGroup) {
+			// 上传图片
+			group.POST("/pic", api.FileController.UploadPic)
+			// 上传pdf
+			group.POST("/pdf", api.FileController.UploadPdf)
+			// 上传附件
+			group.POST("/attachments", api.FileController.UploadAttachment)
+			// 上传视频
+			group.POST("/video", api.FileController.UploadVideo)
+			group.DELETE("/", api.FileController.DeleteObject)
+		})
+		group.Group("/ide", func(group *ghttp.RouterGroup) {
+			// 打开ide
+			group.POST("/", api.TheiaController.GetIDEUrl)
+			// 关闭ide
+			group.DELETE("/", api.TheiaController.CloseIDE)
+		})
+		group.Group("/summit", func(group *ghttp.RouterGroup) {
+			// 上传报告
+			group.POST("/report", api.LabSummitController.InsertReport)
+			// 代码提交（其实就是做个标记
+			group.POST("/code", api.LabSummitController.InsertCodeFinish)
+			// 查阅完成情况
+			group.GET("/", api.LabSummitController.SelectLabSummit)
+			// 收集编译错误信息
+			group.GET("/compile/log", api.LabSummitController.SelectCompilerErrorLog)
 		})
 	})
 

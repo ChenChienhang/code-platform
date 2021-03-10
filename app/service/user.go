@@ -22,8 +22,8 @@ import (
 type role int
 
 const (
-	Teacher role = 1 + iota
-	Student
+	teacher role = 1 + iota
+	student
 )
 
 var UserService = newUserService()
@@ -42,9 +42,9 @@ func newUserService() (s *userService) {
 // @params req
 // @return error
 // @date 2021-01-09 00:15:22
-func (s *userService) SignUpForStu(req *model.SignUpReq) error {
+func (s *userService) SignUpForStu(req *model.SignUpReq) (err error) {
 	// 校验验证码
-	if err := s.checkVerificationCode(req.Email, req.VerificationCode); err != nil {
+	if err = s.checkVerificationCode(req.Email, req.VerificationCode); err != nil {
 		return err
 	}
 
@@ -56,19 +56,19 @@ func (s *userService) SignUpForStu(req *model.SignUpReq) error {
 	//存入加密后的密码
 	req.Password = string(hashPassword)
 	// 保存
-	if _, err = dao.SysUser.OmitEmpty().Insert(req); err != nil {
+	result, err := dao.SysUser.OmitEmpty().Insert(req)
+	if err != nil {
 		return err
 	}
-	// 把id查出来
-	//if userId, err := dao.SysUser.Where(dao.SysUser.Columns.Email, req.Email).
-	//	FindValue(dao.SysUser.Columns.UserId); err != nil {
-	//	return err
-	//} else {
-	// 加入casbin权限
-	//if err = addGroupPolicy(Student, userId.Int()); err != nil {
-	//	return err
-	//}
-	//}
+	// 赋予权限
+	stuId, _ := result.LastInsertId()
+	if _, err = g.Table("sys_user_role").Insert(g.Map{
+		"user_id": stuId,
+		"role_id": student,
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -97,7 +97,7 @@ func (s *userService) SignUpForTeacher(req *model.SignUpReq) error {
 	//	FindValue(dao.SysUser.Columns.UserId); err != nil {
 	//	return err
 	//} else {
-	//	if err = addGroupPolicy(Teacher, userId.Int()); err != nil {
+	//	if err = addGroupPolicy(teacher, userId.Int()); err != nil {
 	//		return err
 	//	}
 	//}
@@ -170,35 +170,49 @@ func (s *userService) Update(req *model.UserUpdateReq) error {
 				Where(dao.Course.Columns.TeacherId, req.UserId).Save(); err != nil {
 				return err
 			}
+			// 作业提交里的真名要改
+			if _, err = dao.LabSubmit.TX(tx).OmitEmpty().Data(dao.LabSubmit.Columns.StuRealName, req.RealName).
+				Where(dao.LabSubmit.Columns.StuId, req.UserId).Save(); err != nil {
+				return err
+			}
 		}
 		// 改了昵称
 		if req.NickName != nil {
 			// 评论里的名字要改
-			if _, err = dao.CourseComment.TX(tx).OmitEmpty().Data(dao.CourseComment.Columns.Username, req.NickName).
+			if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.Username, req.NickName).
 				Where(dao.CourseComment.Columns.UserId, req.UserId).Save(); err != nil {
 				return err
 			}
-			if _, err = dao.CourseComment.TX(tx).OmitEmpty().Data(dao.CourseComment.Columns.ReplyUsername, req.NickName).
+			if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.ReplyUsername, req.NickName).
 				Where(dao.CourseComment.Columns.ReplyId, req.UserId).Save(); err != nil {
 				return err
 			}
-			if _, err = dao.LabComment.TX(tx).OmitEmpty().Data(dao.LabComment.Columns.Username, req.NickName).
+			if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.Username, req.NickName).
 				Where(dao.LabComment.Columns.UserId, req.UserId).Save(); err != nil {
 				return err
 			}
-			if _, err = dao.LabComment.TX(tx).OmitEmpty().Data(dao.LabComment.Columns.ReplyUsername, req.NickName).
+			if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.ReplyUsername, req.NickName).
 				Where(dao.LabComment.Columns.ReplyId, req.UserId).Save(); err != nil {
 				return err
 			}
 		}
 		// 修改了头像
 		if req.AvatarUrl != nil {
-			if _, err = dao.CourseComment.TX(tx).OmitEmpty().Data(dao.CourseComment.Columns.UserAvatarUrl, req.AvatarUrl).
+			// 评论里的名字要改
+			if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.UserAvatarUrl, req.AvatarUrl).
 				Where(dao.CourseComment.Columns.UserId, req.UserId).Save(); err != nil {
 				return err
 			}
-			if _, err = dao.LabComment.TX(tx).OmitEmpty().Data(dao.LabComment.Columns.UserAvatarUrl, req.AvatarUrl).
+			if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.UserAvatarUrl, req.AvatarUrl).
 				Where(dao.LabComment.Columns.UserId, req.UserId).Save(); err != nil {
+				return err
+			}
+		}
+		// 修改了学号
+		if req.Num != nil {
+			// 作业提交里的学号要改
+			if _, err = dao.LabSubmit.TX(tx).OmitEmpty().Data(dao.LabSubmit.Columns.StuNum, req.Num).
+				Where(dao.LabSubmit.Columns.StuId, req.UserId).Save(); err != nil {
 				return err
 			}
 		}
@@ -353,7 +367,7 @@ func (s *userService) DeletedUser(req *model.DeletedUserReq) error {
 // @return *model.SysUserPageResp
 // @return error
 // @date 2021-01-15 00:02:22
-func (s *userService) ListUser(current, size int) (*model.SysUserPageResp, error) {
+func (s *userService) ListUser(current, size int) (*response.PageResp, error) {
 	d := dao.SysUser.Page(current, size).
 		FieldsEx(dao.SysUser.Columns.Password, dao.LabComment.Columns.DeletedAt)
 
@@ -368,7 +382,7 @@ func (s *userService) ListUser(current, size int) (*model.SysUserPageResp, error
 	}
 
 	// 分页信息整合
-	resp := &model.SysUserPageResp{
+	resp := &response.PageResp{
 		Records: all,
 		PageInfo: &response.PageInfo{
 			Size:    len(all),

@@ -5,8 +5,11 @@ package ide
 
 import (
 	"code-platform/app/dao"
+	"code-platform/app/model"
+	"code-platform/app/service"
 	"code-platform/app/service/component"
 	"code-platform/library/common/code"
+	"code-platform/library/common/response"
 	"fmt"
 	"github.com/gogf/gf/container/gmap"
 	"github.com/gogf/gf/frame/g"
@@ -15,6 +18,7 @@ import (
 	"github.com/gogf/gf/text/gstr"
 	"github.com/gogf/gf/util/gconv"
 	"golang.org/x/crypto/ssh"
+	"math"
 	"math/rand"
 	"path"
 	"strconv"
@@ -72,22 +76,30 @@ func newDockerTheiaService() (s *dockerTheiaService) {
 // @params languageEnum 语言枚举
 // @return err
 // @date 2021-03-06 22:09:22
-func (s *dockerTheiaService) CloseIDE(userId int, languageEnum int, labId int) (err error) {
-	languageString := getLanguageString(languageEnum)
-	// 取出缓存
-	s.getTheiaMutex.MyLock()
-	defer s.getTheiaMutex.MyUnLock()
-	v, err := s.theiaPortCache.GetV(fmt.Sprintf("%s-%d-%d", languageString, userId, labId))
+func (s *dockerTheiaService) CloseIDE(req *model.CloseIDEReq) (err error) {
+	// 存入时间
+	if err = service.LabSummitService.InsertCodingTime(req.LabId, req.Duration, req.UserId); err != nil {
+		return err
+	}
+	// 查出所用语言
+	languageString, err := getLanguageStringByLabId(req.LabId)
 	if err != nil {
 		return err
 	}
-	var stat *theiaState
+	// 取出缓存
+	s.getTheiaMutex.MyLock()
+	defer s.getTheiaMutex.MyUnLock()
+	v, err := s.theiaPortCache.GetV(fmt.Sprintf("%s-%d-%d", languageString, req.UserId, req.LabId))
+	if err != nil {
+		return err
+	}
+	var stat = &theiaState{}
 	if err = gconv.Struct(v, &stat); err != nil {
 		return err
 	}
 	// 修改结束时间，注意不是直接关了，等待另一个方法定时清理闲置容器
 	stat.EndTime = gtime.Now()
-	if err = s.theiaPortCache.SetV(fmt.Sprintf("%s-%d-%d", languageString, userId, labId), stat); err != nil {
+	if err = s.theiaPortCache.SetV(fmt.Sprintf("%s-%d-%d", languageString, req.UserId, req.LabId), stat); err != nil {
 		return err
 	}
 	return nil
@@ -101,8 +113,8 @@ func (s *dockerTheiaService) CloseIDE(userId int, languageEnum int, labId int) (
 // @return url
 // @return err
 // @date 2021-03-06 22:10:24
-func (s *dockerTheiaService) GetOrRunIDE(userId int, languageEnum int, labId int) (url string, err error) {
-	ddl, err := dao.Lab.WherePri(labId).FindValue(dao.Lab.Columns.DeadLine)
+func (s *dockerTheiaService) GetOrRunIDE(req *model.GetIDEUrlReq) (url string, err error) {
+	ddl, err := dao.Lab.WherePri(req.LabId).FindValue(dao.Lab.Columns.DeadLine)
 	if err != nil {
 		return "", err
 	}
@@ -110,32 +122,34 @@ func (s *dockerTheiaService) GetOrRunIDE(userId int, languageEnum int, labId int
 	if !ddl.IsNil() && ddl.GTime().Before(gtime.Now()) {
 		return "", code.DDLError
 	}
-	// 枚举转字符串
-	language := getLanguageString(languageEnum)
+	languageString, err := getLanguageStringByLabId(req.LabId)
+	if err != nil {
+		return "", err
+	}
 	// 上锁
 	s.getTheiaMutex.MyLock()
 	defer s.getTheiaMutex.MyUnLock()
 	// 查看有没有没有关闭的容器
-	v, err := s.theiaPortCache.GetV(fmt.Sprintf("%s-%d-%d", language, userId, labId))
+	v, err := s.theiaPortCache.GetV(fmt.Sprintf("%s-%d-%d", languageString, req.UserId, req.LabId))
 	if err != nil {
 		return "", err
 	}
 	if v != nil {
 		// 之前的还没有关闭,直接打开之前的,返回之前的端口
-		var stat = theiaState{}
+		var stat = &theiaState{}
 		if err = gconv.Struct(v, &stat); err != nil {
 			return "", err
 		}
 		// 刷新时间，重新存
 		stat.StartTime = gtime.Now()
 		stat.EndTime = nil
-		if err = s.theiaPortCache.SetV(fmt.Sprintf("%s-%d-%d", language, userId, labId), stat); err != nil {
+		if err = s.theiaPortCache.SetV(fmt.Sprintf("%s-%d-%d", languageString, req.UserId, req.LabId), stat); err != nil {
 			return "", err
 		}
 		return stat.Url, nil
 	}
 	// 之前的已经关闭,重新开一个新的容器,并存入缓存
-	url, err = s.execRunTheiaDocker(userId, language, labId)
+	url, err = s.execRunTheiaDocker(req.UserId, languageString, req.LabId)
 	if err != nil {
 		return "", err
 	}
@@ -189,8 +203,11 @@ loop:
 			return -1, err
 		}
 		// 这里不处理error了，有输出会伴随错误
-		output, _ := session.CombinedOutput(fmt.Sprintf("netstat -an | grep :%d", randPort))
+		output, err := session.CombinedOutput(fmt.Sprintf("netstat -an | grep :%d", randPort))
 		_ = session.Close()
+		if err != nil {
+			return 0, err
+		}
 		// 端口可用
 		if output == nil {
 			break loop
@@ -240,7 +257,7 @@ func (s *dockerTheiaService) execRunTheiaDocker(userId int, language string, lab
 		return
 	}
 	var theiaType string
-	if language == "ts" {
+	if language == "web" {
 		theiaType = "theiaide/theia"
 	} else {
 		theiaType = "theiaide/theia-" + language
@@ -271,11 +288,24 @@ func (s *dockerTheiaService) execRunTheiaDocker(userId int, language string, lab
 		theiaType)); err != nil {
 		return "", err
 	}
+	//session1, err := s.sshClient.NewSession()
+	//if err != nil {
+	//	return "", err
+	//}
+	////goland:noinspection GoUnhandledErrorResult
+	//defer session1.Close()
+	//// 如果插件目录不存在,初始化插件目录，使用git下载
+	//if err = session1.Run(fmt.Sprintf("if [ ! -d %s ] then git clone %s %s; fi;",
+	//	path.Join(s.basePath, "students", strconv.Itoa(userId), ".theia-"+language, "extensions"),
+	//	g.Cfg().GetString("gitExtensions"),
+	//	path.Join(s.basePath, "students", strconv.Itoa(userId), ".theia-"+language, "extensions"))); err != nil {
+	//	return "", err
+	//}
 
 	// 返回类似的118.178.253.239:3001
 	url = fmt.Sprintf("%s:%d", g.Cfg().GetString("theia.docker.host"), port)
 	// 把端口启动的theia状态存下来
-	stat := theiaState{
+	stat := &theiaState{
 		Url:       url,
 		StartTime: gtime.Now(),
 	}
@@ -297,8 +327,11 @@ func (s *dockerTheiaService) clearAllIDE() error {
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	defer session.Close()
-	// 这里不处理error了，有输出会伴随错误,命令时格式化输出，用了go的template语法
-	output, _ := session.CombinedOutput(fmt.Sprintf("docker ps --format \"table {{.Names}}\""))
+	// 命令时格式化输出，用了go的template语法
+	output, err := session.CombinedOutput(fmt.Sprintf("docker ps --format \"table {{.Names}}\""))
+	if err != nil {
+		return err
+	}
 	split := gstr.Split(string(output), "\n")
 	for _, v := range split {
 		if gstr.HasPrefix(v, "mytheia") {
@@ -312,4 +345,75 @@ func (s *dockerTheiaService) clearAllIDE() error {
 		}
 	}
 	return nil
+}
+
+func (s *dockerTheiaService) CollectCompilerErrorLog(req *model.SelectCompilerErrorLogReq) (resp *response.PageResp, err error) {
+	records := make([]*model.CompilerErrorLogResp, 0)
+	courseId, err := dao.Lab.WherePri(req.LabId).Cache(time.Hour).FindValue(dao.Lab.Columns.CourseId)
+	if err != nil {
+		return nil, err
+	}
+	// 所有选了这门课的学生id
+	stuIds, count, err := dao.Course.ListUserIdByCourseId(req.PageCurrent, req.PageSize, courseId.Int())
+	compilerErrorLogChan := make(chan *model.CompilerErrorLogResp, len(stuIds))
+	// 开协程收集所有日志
+	for _, v := range stuIds {
+		go s.execCollectCompilerLog(v.Int(), compilerErrorLogChan, req.LabId)
+	}
+
+	// 收集结果
+	for {
+		select {
+		case log := <-compilerErrorLogChan:
+			records = append(records, log)
+		}
+		if len(records) == len(stuIds) {
+			break
+		}
+	}
+
+	// 装填学号
+	stuDetail := make([]*model.SysUser, 0)
+	if err = dao.SysUser.Where(stuIds).Fields(dao.SysUser.Columns.Num, dao.SysUser.Columns.UserId).Scan(&stuDetail); err != nil {
+		return nil, err
+	}
+	for _, v := range records {
+		for _, v1 := range stuDetail {
+			if v.StuId == v1.UserId {
+				v.StuNum = v1.Num
+				break
+			}
+		}
+	}
+	return &response.PageResp{
+		Records: records,
+		PageInfo: &response.PageInfo{
+			Size:    len(records),
+			Total:   count,
+			Current: req.PageCurrent,
+			Pages:   int(math.Ceil(float64(count) / float64(req.PageSize))),
+		}}, nil
+}
+
+func (s *dockerTheiaService) execCollectCompilerLog(stuId int, logChan chan *model.CompilerErrorLogResp, labId int) {
+	session, err := s.sshClient.NewSession()
+	if err != nil {
+		return
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer session.Close()
+	compilerLog := &model.CompilerErrorLogResp{
+		StuId: stuId,
+	}
+	defer func() {
+		logChan <- compilerLog
+	}()
+	// 第一个%s是basePath,第二个是%d是stuId,第三个是%d是labId
+	output, err := session.CombinedOutput(fmt.Sprintf(" logPath = %s; if [ ! -e $logPath ] then cat $logPath ;fi;",
+		path.Join(s.basePath, "students", strconv.Itoa(stuId), fmt.Sprintf("workspace-%d", labId), ".compilerError.log")))
+	if err != nil || output == nil {
+		return
+	}
+	compilerLog.CompilerLog = string(output)
+	return
 }

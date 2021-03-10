@@ -23,22 +23,18 @@ import (
 	"time"
 )
 
-const (
-	redisHeaderDirtyFileSet = "code.platform:dirty.file"
-	// 自己试出来的，官网的sdk说明已经过时了，不能直接把"github.com/minio/minio-go/v7/pkg/policy"的常量放进去
-	readOnly     = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucket\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}"
-	writeOnly    = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucketMultipartUploads\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:AbortMultipartUpload\",\"s3:DeletePic\",\"s3:ListMultipartUploadParts\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}"
-	writeAndRead = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:ListBucket\",\"s3:ListBucketMultipartUploads\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:AbortMultipartUpload\",\"s3:DeletePic\",\"s3:GetObject\",\"s3:ListMultipartUploadParts\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}"
-)
-
 var FileService = newFileService()
 
 type fileService struct {
-	minio                *minio.Client
-	picBucketName        string
-	reportBucketName     string
-	attachmentBucketName string
-	videoBucketName      string
+	minio                   *minio.Client
+	picBucketName           string
+	reportBucketName        string
+	attachmentBucketName    string
+	videoBucketName         string
+	redisHeaderDirtyFileSet string
+	policyReadOnly          string
+	policyWriteOnly         string
+	policyWriteAndRead      string
 }
 
 func newFileService() (f *fileService) {
@@ -55,11 +51,16 @@ func newFileService() (f *fileService) {
 		panic(err)
 	}
 	f = &fileService{
-		minio:                m,
-		picBucketName:        g.Cfg().GetString("minio.bucketName.picBucketName"),
-		reportBucketName:     g.Cfg().GetString("minio.bucketName.reportBucketName"),
-		attachmentBucketName: g.Cfg().GetString("minio.bucketName.attachment"),
-		videoBucketName:      g.Cfg().GetString("minio.bucketName.videoBucketName"),
+		minio:                   m,
+		picBucketName:           g.Cfg().GetString("minio.bucketName.picBucketName"),
+		reportBucketName:        g.Cfg().GetString("minio.bucketName.reportBucketName"),
+		attachmentBucketName:    g.Cfg().GetString("minio.bucketName.attachment"),
+		videoBucketName:         g.Cfg().GetString("minio.bucketName.videoBucketName"),
+		redisHeaderDirtyFileSet: "code.platform:dirty.file",
+		// 自己试出来的，官网的sdk说明已经过时了，不能直接把"github.com/minio/minio-go/v7/pkg/policy"的常量放进去
+		policyReadOnly:     "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucket\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}",
+		policyWriteOnly:    "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucketMultipartUploads\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:AbortMultipartUpload\",\"s3:DeletePic\",\"s3:ListMultipartUploadParts\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}",
+		policyWriteAndRead: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:ListBucket\",\"s3:ListBucketMultipartUploads\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::%s\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:AbortMultipartUpload\",\"s3:DeletePic\",\"s3:GetObject\",\"s3:ListMultipartUploadParts\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::%s/*\"]}]}",
 	}
 
 	location := "cn-north-1"
@@ -80,7 +81,7 @@ func newFileService() (f *fileService) {
 			panic(bucketName + " 存储桶 创建失败" + err.Error())
 		}
 		//设置该存储桶策略
-		if err = m.SetBucketPolicy(ctx, bucketName, fmt.Sprintf(readOnly, bucketName, bucketName)); err != nil {
+		if err = m.SetBucketPolicy(ctx, bucketName, fmt.Sprintf(f.policyReadOnly, bucketName, bucketName)); err != nil {
 			panic(err)
 		}
 	}
@@ -99,7 +100,7 @@ func newFileService() (f *fileService) {
 			panic(bucketName + " 存储桶 创建失败" + err.Error())
 		}
 		//设置该存储桶策略
-		if err = m.SetBucketPolicy(ctx, bucketName, fmt.Sprintf(readOnly, bucketName, bucketName)); err != nil {
+		if err = m.SetBucketPolicy(ctx, bucketName, fmt.Sprintf(f.policyReadOnly, bucketName, bucketName)); err != nil {
 			panic(err)
 		}
 	}
@@ -125,7 +126,7 @@ func newFileService() (f *fileService) {
 				}
 			}
 		}
-	}(redisHeaderDirtyFileSet)
+	}(f.redisHeaderDirtyFileSet)
 	return f
 }
 
@@ -134,7 +135,7 @@ func newFileService() (f *fileService) {
 // @date 2021-02-28 16:38:33
 func (s *fileService) RemoveDirtyFile(url string) {
 	// 获得集合，我觉得这个set应该不会很大，直接遍历问题应该不大
-	v, _ := g.Redis().DoVar("SMEMBERS", redisHeaderDirtyFileSet)
+	v, _ := g.Redis().DoVar("SMEMBERS", s.redisHeaderDirtyFileSet)
 	dirtyFiles := make([]model.DirtyFile, 0)
 	_ = gconv.Structs(v, &dirtyFiles)
 	// 删除所有过期文件
@@ -142,7 +143,7 @@ func (s *fileService) RemoveDirtyFile(url string) {
 		// 过去了24小时该文件且未被引用
 		if v.Url == url {
 			// 从集合中删除
-			_, _ = g.Redis().Do("SREM", redisHeaderDirtyFileSet, v)
+			_, _ = g.Redis().Do("SREM", s.redisHeaderDirtyFileSet, v)
 			break
 		}
 	}
@@ -150,7 +151,7 @@ func (s *fileService) RemoveDirtyFile(url string) {
 
 func (s *fileService) AddDirtyFile(url string) {
 	// 加入集合
-	_, _ = g.Redis().DoVar("SADD", redisHeaderDirtyFileSet, url)
+	_, _ = g.Redis().DoVar("SADD", s.redisHeaderDirtyFileSet, url)
 }
 
 // UploadPdf 上传pdf

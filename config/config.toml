@@ -5,6 +5,8 @@
 	ServerRoot = "public"
 	ServerAgent = "gf-app"
 	LogPath = "/tmp/log/gf-app/server"
+    # 是否多副本
+    Multiple = false
 
 # Logger.
 [logger]
@@ -34,15 +36,15 @@
         Stdout = true
 
 [redis]
+    default = "118.178.253.239:6379,0,123456"
     host = "118.178.253.239"
     port = "6379"
-    pass = "Redis13229798448?"
+    pass = "123456"
 
 [gfcli]
     [[gfcli.gen.dao]]
         link = "mysql:root:Mysql13229798448?@tcp(118.178.253.239:3306)/code_platform"
         prefix = ""
-#        jsonCase = "CamelLower"
         tables = "course_recourse,checkin_detail,checkin_record,lab,lab_comment,course,course_comment,lab_comment,lab_submit,sys_user"
 [mail]
     # 邮箱
@@ -53,8 +55,8 @@
 
 [minio]
     endpoint = "118.178.253.239:9000"
-    accessKeyID = "AKIAIOSFODNN7EXAMPLE"
-    secretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    accessKeyID = "root"
+    secretAccessKey = "12345678"
     # 存储桶名称
     [minio.bucketName]
         picBucketName = "pic"
@@ -64,8 +66,17 @@
 [moss]
     userId = "604014254"
 
+[theia]
+    gitExtensions = "https"
+    isK3S = false
+    [theia.docker]
+        user = "root"
+        host = "118.178.253.239"
+        pass = "4125qaswIklo8569"
+        basePath = "/mnt/code-platform"
+
 [k3s]
-    # theia 地址
+    # ide 地址
     [k3s.theia]
         theia-full = "123456"
         theia-cpp = "123456"

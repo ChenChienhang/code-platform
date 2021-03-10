@@ -34,12 +34,6 @@ type CourseCommentEntity struct {
 	ReplyComments []*CourseCommentResp `json:"reply_comments"` // 子评论
 }
 
-// CourseCommentEntityPageResp 返回集
-type CourseCommentEntityPageResp struct {
-	Records  []*CourseCommentEntity `json:"records"`
-	PageInfo *response.PageInfo     `json:"page_info"` // 页面信息
-}
-
 type InsertCourseCommentReq struct {
 	CourseId    int    // 实验内容
 	CommentText string // 评论内容
@@ -49,7 +43,6 @@ type InsertCourseCommentReq struct {
 }
 
 type ListCourseCommentReq struct {
-	PageCurrent int // 页码
-	PageSize    int // 页面大小
-	CourseId    int // 课程id
+	response.PageReq
+	CourseId int // 课程id
 }

@@ -24,11 +24,6 @@ type CourseRecourseResp struct {
 	UpdatedAt        *gtime.Time `orm:"updated_at"                 json:"updated_at"`         // 修改时间
 }
 
-type CourseRecoursePageResp struct {
-	Records  []*CourseRecourseResp `json:"records"`
-	PageInfo *response.PageInfo    `json:"page_info"`
-}
-
 type InsertCourseRecourseReq struct {
 	CourseId      int     // 课程id
 	Title         string  // 标题，限20字
@@ -44,7 +39,6 @@ type UpdateCourseRecourseReq struct {
 }
 
 type ListCourseResourceReq struct {
-	CourseId    int
-	PageCurrent int
-	PageSize    int
+	CourseId int
+	response.PageReq
 }

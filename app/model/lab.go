@@ -7,7 +7,6 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
-	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/gtime"
 )
 
@@ -27,14 +26,6 @@ type LabResp struct {
 	UpdatedAt     *gtime.Time `orm:"updated_at"     json:"updated_at"`     // 修改时间
 }
 
-type InsertLabReq struct {
-	CourseId      int         // 该实验隶属的课程
-	Title         string      // 标题
-	Description   string      // 实验内容简介
-	AttachmentUrl *string     // 实验附件url
-	DeadLine      *gtime.Time // 截止时间
-}
-
 type UpdateLabReq struct {
 	LabId         int         `orm:"lab_id,primary" json:"lab_id"`         // 主键
 	Title         *string     `orm:"title"          json:"title"`          // 标题
@@ -43,19 +34,22 @@ type UpdateLabReq struct {
 	DeadLine      *gtime.Time `orm:"dead_line"      json:"dead_line"`      // 截止时间
 }
 
-type LabPageResp struct {
-	Records  []*LabResp         `json:"records"`
-	PageInfo *response.PageInfo `json:"page_info"`
+type InsertLabReq struct {
+	CourseId      int         // 该实验隶属的课程
+	Title         string      // 标题
+	Description   string      // 实验内容简介
+	AttachmentUrl *string     // 实验附件url
+	DeadLine      *gtime.Time // 截止时间
 }
 
 type ListLabReq struct {
-	PageCurrent int
-	PageSize    int
-	CourseId    int
+	response.PageReq
+	CourseId int
 }
 
-type SummitReportReq struct {
-	Report *ghttp.UploadFile
-	LabId  int
-	StuId  int
+type CodingTime struct {
+	CodingTimeId int
+	Duration     int
+	CreatedAt    *gtime.Time
+	UpdatedAt    *gtime.Time
 }

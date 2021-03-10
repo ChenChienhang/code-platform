@@ -3,14 +3,19 @@
 // @Description:
 package model
 
-type GetIdeUrlReq struct {
-	LanguageEnum int
-	UserId       int
-	LabId        int
+type GetIDEUrlReq struct {
+	UserId int
+	LabId  int
 }
 
-type CloseIdeReq struct {
-	LanguageEnum int
-	UserId       int
-	LabId        int
+type CloseIDEReq struct {
+	Duration int
+	UserId   int
+	LabId    int
+}
+
+type CompilerErrorLogResp struct {
+	StuId       int    `json:"stu_id"`
+	StuNum      string `json:"stu_num"`
+	CompilerLog string `json:"compiler_log"`
 }

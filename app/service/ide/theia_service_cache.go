@@ -19,7 +19,7 @@ type iTheiaServiceMap interface {
 	GetTimeOut() (removeIDE []*gmap.StrStrMap)
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**********************************************************************************************************************/
 
 type theiaServiceRedisMap struct {
 	redisHeader string
@@ -38,7 +38,7 @@ func (u *theiaServiceRedisMap) GetTimeOut() (removeIDE []*gmap.StrStrMap) {
 	keys := v.Strings()
 	removeIDE = make([]*gmap.StrStrMap, 0)
 	for _, key := range keys {
-		v, err := r.DoVar("GET", key)
+		v, err = r.DoVar("GET", key)
 		if err != nil {
 			glog.Debug("redis获得key失败")
 		}
@@ -84,7 +84,7 @@ func (u *theiaServiceRedisMap) GetV(key string) (value interface{}, err error) {
 	return v.Interface(), nil
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**********************************************************************************************************************/
 
 type theiaServiceSimpleMap struct {
 	m *gmap.StrAnyMap

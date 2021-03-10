@@ -4,16 +4,20 @@
 package ide
 
 import (
+	"code-platform/app/dao"
+	"code-platform/app/model"
+	"code-platform/library/common/response"
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/os/gtime"
 	"time"
 )
 
 type iTheiaService interface {
-	GetOrRunIDE(userId int, languageEnum int, labId int) (url string, err error)
+	GetOrRunIDE(req *model.GetIDEUrlReq) (url string, err error)
 	clearTimeOutIDE()
 	shutDownIDE(userId int, languageEnum int, labId int) (err error)
-	CloseIDE(userId int, languageEnum int, labId int) (err error)
+	CloseIDE(req *model.CloseIDEReq) (err error)
+	CollectCompilerErrorLog(req *model.SelectCompilerErrorLogReq) (resp *response.PageResp, err error)
 }
 
 var TheiaService = newTheiaService()
@@ -26,10 +30,10 @@ func newTheiaService() (t iTheiaService) {
 		// 用docker
 		t = newDockerTheiaService()
 	}
-	// 每5分钟清理一次容器
+	// 每10分钟清理一次容器
 	go func() {
 		for {
-			time.Sleep(5 * time.Minute)
+			time.Sleep(10 * time.Minute)
 			t.clearTimeOutIDE()
 		}
 	}()
@@ -55,7 +59,7 @@ func getLanguageString(languageEnum int) string {
 		languageType = "go"
 	case 5:
 		// ts/js
-		languageType = "ts"
+		languageType = "web"
 	case 6:
 		languageType = "php"
 	case 7:
@@ -64,6 +68,26 @@ func getLanguageString(languageEnum int) string {
 		languageType = "rust"
 	}
 	return languageType
+}
+
+func getLanguageStringByLabId(labId int) (languageString string, err error) {
+	// 查出所用语言
+	var languageEnum int
+	if labId != 0 {
+		courseId, err := dao.Lab.Cache(time.Hour).WherePri(labId).FindValue(dao.Lab.Columns.CourseId)
+		if err != nil {
+			return "", err
+		}
+		languageEnumV, err := dao.Course.Cache(time.Hour).WherePri(courseId.Int()).FindValue(dao.Course.Columns.Language)
+		if err != nil {
+			return "", err
+		}
+		languageEnum = languageEnumV.Int()
+	} else {
+		languageEnum = 0
+	}
+	languageString = getLanguageString(languageEnum)
+	return languageString, nil
 }
 
 type theiaState struct {

@@ -9,6 +9,7 @@ import (
 	"code-platform/app/model"
 	"github.com/gogf/gf/database/gdb"
 	"github.com/gogf/gf/frame/g"
+	"time"
 )
 
 // courseDao is the manager for logic model data accessing
@@ -58,7 +59,7 @@ func (c *courseDao) ListCourseIdByStuId(pageCurrent, pageSize, courseId int) (al
 // @date 2021-02-06 23:22:43
 func (c *courseDao) ListUserIdByCourseId(pageCurrent int, pageSize int, courseId int) (all []gdb.Value, count int, err error) {
 	d := g.Table("re_course_user").Where("course_id", courseId)
-	all, err = d.Page(pageCurrent, pageSize).FindArray("user_id")
+	all, err = d.Page(pageCurrent, pageSize).Cache(time.Hour).FindArray("user_id")
 	if err != nil {
 		return nil, 0, err
 	}

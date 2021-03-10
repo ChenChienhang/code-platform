@@ -158,7 +158,7 @@ func (c *checkinService) StartCheckIn(req *model.StartCheckInReq) (err error) {
 // @return resp
 // @return err
 // @date 2021-02-20 23:55:42
-func (c *checkinService) ListCheckinRecords(req *model.ListCheckinRecordsReq) (resp *model.CheckinRecordPageResp, err error) {
+func (c *checkinService) ListCheckinRecords(req *model.ListCheckinRecordsReq) (resp *response.PageResp, err error) {
 	// 按创建时间降序
 	checkInRecordResp := make([]*model.CheckinRecordResp, 0)
 	d := dao.CheckinRecord.WherePri(req.CourseId).Order(dao.CheckinRecord.Columns.CreatedAt + " desc")
@@ -183,7 +183,7 @@ func (c *checkinService) ListCheckinRecords(req *model.ListCheckinRecordsReq) (r
 	}
 
 	// 分页信息整合
-	resp = &model.CheckinRecordPageResp{
+	resp = &response.PageResp{
 		Records: checkInRecordResp,
 		PageInfo: &response.PageInfo{
 			Size:    len(checkInRecordResp),
@@ -202,7 +202,7 @@ func (c *checkinService) ListCheckinRecords(req *model.ListCheckinRecordsReq) (r
 // @return resp
 // @return err
 // @date 2021-02-20 23:57:15
-func (c *checkinService) ListCheckinDetail(req *model.ListCheckinDetailsReq) (resp *model.CheckinDetailPageResp, err error) {
+func (c *checkinService) ListCheckinDetail(req *model.ListCheckinDetailsReq) (resp *response.PageResp, err error) {
 	// 查出courseId
 	courseId, err := dao.CheckinRecord.WherePri(req.CheckInRecordId).FindValue(dao.CheckinRecord.Columns.CourseId)
 	if err != nil {
@@ -238,7 +238,7 @@ func (c *checkinService) ListCheckinDetail(req *model.ListCheckinDetailsReq) (re
 		}
 	}
 	// 返回
-	resp = &model.CheckinDetailPageResp{
+	resp = &response.PageResp{
 		Records: checkinDetails,
 		PageInfo: &response.PageInfo{
 			Size:    len(checkinDetails),

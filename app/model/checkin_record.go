@@ -25,21 +25,14 @@ type CheckinRecordResp struct {
 	UpdatedAt       *gtime.Time `json:"updated_at"`        // 更新时间
 }
 
-type CheckinRecordPageResp struct {
-	Records  []*CheckinRecordResp `json:"records"`
-	PageInfo *response.PageInfo   `json:"page_info"`
-}
-
 type ListCheckinRecordsReq struct {
-	CourseId    int // 课程id
-	PageCurrent int // 页码
-	PageSize    int // 页面大小
+	CourseId int // 课程id
+	response.PageReq
 }
 
 type ListCheckinDetailsReq struct {
 	CheckInRecordId int // 课程id
-	PageCurrent     int // 页码
-	PageSize        int // 页面大小
+	response.PageReq
 }
 
 type UpdateCheckinDetail struct {

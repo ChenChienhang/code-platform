@@ -34,12 +34,6 @@ type LabCommentEntity struct {
 	ReplyComments []*LabCommentResp `json:"reply_comments"` // 子评论
 }
 
-// LabCommentEntityPageResp 返回集
-type LabCommentEntityPageResp struct {
-	Records  []*LabCommentEntity `json:"records"`
-	PageInfo *response.PageInfo  `json:"page_info"` // 页面信息
-}
-
 type InsertLabCommentReq struct {
 	LabId       int    // 实验id
 	CommentText string // 评论内容
@@ -49,7 +43,6 @@ type InsertLabCommentReq struct {
 }
 
 type ListLabCommentReq struct {
-	PageCurrent int // 页码
-	PageSize    int // 页面大小
-	LabId       int // 课程id
+	response.PageReq
+	LabId int // 课程id
 }

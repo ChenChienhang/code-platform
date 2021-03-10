@@ -17,12 +17,12 @@ var TheiaController = new(theiaController)
 type theiaController struct{}
 
 func (c *theiaController) GetIDEUrl(r *ghttp.Request) {
-	var req *model.GetIdeUrlReq
+	var req *model.GetIDEUrlReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
 	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
-	url, err := ide.TheiaService.GetOrRunIDE(req.UserId, req.LanguageEnum, req.LabId)
+	url, err := ide.TheiaService.GetOrRunIDE(req)
 	if err != nil {
 		response.Exit(r, err)
 	}
@@ -30,12 +30,12 @@ func (c *theiaController) GetIDEUrl(r *ghttp.Request) {
 }
 
 func (c *theiaController) CloseIDE(r *ghttp.Request) {
-	var req *model.CloseIdeReq
+	var req *model.CloseIDEReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
 	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
-	if err := ide.TheiaService.CloseIDE(req.UserId, req.LanguageEnum, req.LabId); err != nil {
+	if err := ide.TheiaService.CloseIDE(req); err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, true)

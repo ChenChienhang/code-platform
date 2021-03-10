@@ -29,11 +29,6 @@ type CourseResp struct {
 	Language    *int        `orm:"language"          json:"language""`    // 语言类型枚举
 }
 
-type CoursePageResp struct {
-	Records  []*CourseResp      `json:"records"`
-	PageInfo *response.PageInfo `json:"page_info"`
-}
-
 type InsertCourseReq struct {
 	TeacherId   int     // 教师id
 	TeacherName string  // 教师名称
@@ -55,21 +50,18 @@ type UpdateCourseReq struct {
 }
 
 type ListByTeacherIdReq struct {
-	PageCurrent int // 页码
-	PageSize    int // 页面大小
-	TeacherId   int // 教师id
+	response.PageReq
+	TeacherId int // 教师id
 }
 
 type ListCourseByStuIdReq struct {
-	PageCurrent int // 页码
-	PageSize    int // 页面大小
-	StudentId   int // 学生id
+	response.PageReq
+	StudentId int // 学生id
 }
 
 type ListStuByCourseIdReq struct {
-	PageCurrent int // 页码
-	PageSize    int // 页面大小
-	CourseId    int // 课程id
+	response.PageReq
+	CourseId int // 课程id
 }
 
 type AttendCourseReq struct {
@@ -84,7 +76,6 @@ type DropCourseReq struct {
 }
 
 type SearchListByCourseNameReq struct {
-	CourseName  string // 用于搜索课程名称
-	PageCurrent int    // 页码
-	PageSize    int    // 页面大小
+	CourseName string // 用于搜索课程名称
+	response.PageReq
 }

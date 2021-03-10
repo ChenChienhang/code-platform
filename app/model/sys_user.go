@@ -6,7 +6,6 @@ package model
 
 import (
 	"code-platform/app/model/internal"
-	"code-platform/library/common/response"
 	"github.com/gogf/gf/os/gtime"
 )
 
@@ -27,11 +26,6 @@ type SysUserResp struct {
 	Organization *string     `orm:"organization"     json:"organization"` // 单位，例如计算机学院，限15字
 	UpdatedAt    *gtime.Time `orm:"updated_at"       json:"updated_at"`   // 修改时间
 	CreatedAt    *gtime.Time `orm:"created_at"       json:"created_at"`   // 创建时间
-}
-
-type SysUserPageResp struct {
-	Records  []*SysUserResp     `json:"records"`
-	PageInfo *response.PageInfo `json:"page_info"`
 }
 
 // 注册请求注册参数
