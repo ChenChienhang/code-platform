@@ -10,17 +10,16 @@ import (
 
 // SysUser is the golang structure for table sys_user.
 type SysUser struct {
-	UserId       int         `orm:"user_id,primary"  json:"user_id"`      // 主键
-	Email        string      `orm:"email,unique"     json:"email"`        // 邮箱，限30字
-	Num          string      `orm:"num"              json:"num"`          // 学号/职工号，限20位
-	NickName     string      `orm:"nick_name,unique" json:"nick_name"`    // 昵称，限6字
-	RealName     string      `orm:"real_name"        json:"real_name"`    // 真实姓名，限6字
-	Password     string      `orm:"password"         json:"password"`     // 密码
-	AvatarUrl    string      `orm:"avatar_url"       json:"avatar_url"`   // 头像url
-	Gender       int         `orm:"gender"           json:"gender"`       // 性别
-	Major        string      `orm:"major"            json:"major"`        // 专业，限15字
-	Organization string      `orm:"organization"     json:"organization"` // 单位，例如计算机学院，限15字
-	UpdatedAt    *gtime.Time `orm:"updated_at"       json:"updated_at"`   // 修改时间
-	CreatedAt    *gtime.Time `orm:"created_at"       json:"created_at"`   // 创建时间
-	DeletedAt    *gtime.Time `orm:"deleted_at"       json:"deleted_at"`   // 删除时间
+	UserId       int         `orm:"user_id,primary" json:"user_id"`      // 主键
+	Email        string      `orm:"email"           json:"email"`        // 邮箱，限30字
+	Num          string      `orm:"num"             json:"num"`          // 学号/职工号，限20位
+	RealName     string      `orm:"real_name"       json:"real_name"`    // 真实姓名，限6字
+	Password     string      `orm:"password"        json:"password"`     // 密码
+	AvatarUrl    string      `orm:"avatar_url"      json:"avatar_url"`   // 头像url
+	Gender       int         `orm:"gender"          json:"gender"`       // 性别
+	Major        string      `orm:"major"           json:"major"`        // 专业，限15字
+	Organization string      `orm:"organization"    json:"organization"` // 单位，例如计算机学院，限15字
+	UpdatedAt    *gtime.Time `orm:"updated_at"      json:"updated_at"`   // 修改时间
+	CreatedAt    *gtime.Time `orm:"created_at"      json:"created_at"`   // 创建时间
+	DeletedAt    *gtime.Time `orm:"deleted_at"      json:"deleted_at"`   // 删除时间
 }

@@ -15,7 +15,7 @@ var LabController = new(labController)
 
 type labController struct{}
 
-func (c *labController) Insert(r *ghttp.Request) {
+func (receiver *labController) Insert(r *ghttp.Request) {
 	var req *model.InsertLabReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
@@ -26,7 +26,7 @@ func (c *labController) Insert(r *ghttp.Request) {
 	response.Succ(r, true)
 }
 
-func (c *labController) Update(r *ghttp.Request) {
+func (receiver *labController) Update(r *ghttp.Request) {
 	var req *model.UpdateLabReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
@@ -37,19 +37,20 @@ func (c *labController) Update(r *ghttp.Request) {
 	response.Succ(r, true)
 }
 
-func (c *labController) List(r *ghttp.Request) {
-	var req *model.ListLabReq
+func (receiver *labController) ListByCourseId(r *ghttp.Request) {
+	var req *model.ListLabByCourseIdReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	resp, err := service.LabService.List(req)
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
+	resp, err := service.LabService.ListByCourseId(req)
 	if err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, resp)
 }
 
-func (c *labController) GetOne(r *ghttp.Request) {
+func (receiver *labController) GetOne(r *ghttp.Request) {
 	labId := r.GetInt("labId")
 	resp, err := service.LabService.GetOne(labId)
 	if err != nil {
@@ -58,11 +59,24 @@ func (c *labController) GetOne(r *ghttp.Request) {
 	response.Succ(r, resp)
 }
 
-func (c *labController) Delete(r *ghttp.Request) {
+func (receiver *labController) Delete(r *ghttp.Request) {
 	labId := r.GetInt("labId")
 	// 查看开实验的人是不是用户
-	if err := service.LabService.Delete(r.GetVar(dao.SysUser.Columns.UserId).Int(), labId); err != nil {
+	if err := service.LabService.Delete(r.GetCtxVar(dao.SysUser.Columns.UserId).Int(), labId); err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, true)
+}
+
+func (receiver *labController) ListByToken(r *ghttp.Request) {
+	var req *model.ListLabByTokenReq
+	if err := r.Parse(&req); err != nil {
+		response.Exit(r, err)
+	}
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
+	resp, err := service.LabService.ListByToken(req)
+	if err != nil {
+		response.Exit(r, err)
+	}
+	response.Succ(r, resp)
 }

@@ -22,9 +22,6 @@ type labService struct{}
 // @return err
 // @date 2021-02-20 23:52:17
 func (s *labService) Insert(req *model.InsertLabReq) (err error) {
-	if _, err = dao.Lab.OmitEmpty().Insert(req); err != nil {
-		return err
-	}
 	if req.AttachmentUrl != nil {
 		go func() {
 			FileService.RemoveDirtyFile(*req.AttachmentUrl)
@@ -33,7 +30,7 @@ func (s *labService) Insert(req *model.InsertLabReq) (err error) {
 	return nil
 }
 
-// List 分页列表实验
+// ListByCourseId 分页列表实验
 // @receiver s
 // @params pageCurrent
 // @params pageSize
@@ -41,7 +38,7 @@ func (s *labService) Insert(req *model.InsertLabReq) (err error) {
 // @return resp
 // @return err
 // @date 2021-02-20 23:52:31
-func (s *labService) List(req *model.ListLabReq) (resp *response.PageResp, err error) {
+func (s *labService) ListByCourseId(req *model.ListLabByCourseIdReq) (resp *response.PageResp, err error) {
 	// 查找lab信息
 	d := dao.Lab.Where(dao.Lab.Columns.CourseId, req.CourseId).FieldsEx(dao.Lab.Columns.DeletedAt, dao.Lab.Columns.AttachmentUrl)
 
@@ -54,6 +51,21 @@ func (s *labService) List(req *model.ListLabReq) (resp *response.PageResp, err e
 	count, err := d.Count()
 	if err != nil {
 		return nil, err
+	}
+
+	labSubmits := make([]*model.LabSubmit, 0)
+	if err = dao.LabSubmit.Where(dao.LabSubmit.Columns.UserId, req.UserId).
+		FieldsEx(dao.LabSubmit.Columns.DeletedAt).Scan(&labSubmits); err != nil {
+		return nil, err
+	}
+	// 查一下每一个实验是否完成
+	for _, v := range records {
+		for _, v1 := range labSubmits {
+			if v.LabId == v1.LabId && v1.IsFinish == 1 {
+				v.IsFinish = true
+				break
+			}
+		}
 	}
 
 	resp = &response.PageResp{
@@ -86,7 +98,7 @@ func (s *labService) Update(req *model.UpdateLabReq) (err error) {
 			}(&removeFlag)
 		}
 	}
-	if _, err = dao.Lab.OmitEmpty().Save(req); err != nil {
+	if _, err = dao.Lab.OmitEmpty().Update(req); err != nil {
 		removeFlag = false
 		return err
 	}
@@ -95,7 +107,7 @@ func (s *labService) Update(req *model.UpdateLabReq) (err error) {
 
 func (s *labService) GetOne(labId int) (resp *model.LabResp, err error) {
 	resp = new(model.LabResp)
-	if err = dao.Lab.WherePri(labId).FieldsEx(dao.Lab.Columns.DeletedAt).Scan(resp); err != nil {
+	if err = dao.Lab.WherePri(labId).FieldsEx(dao.Lab.Columns.DeletedAt).Scan(&resp); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -117,4 +129,43 @@ func (s *labService) Delete(userId int, labId int) (err error) {
 		return err
 	}
 	return nil
+}
+
+func (s *labService) ListByToken(req *model.ListLabByTokenReq) (resp *response.PageResp, err error) {
+	records := make([]*model.LabResp, 0)
+	// 找出所有参加的课程
+	courseIds, err := dao.Course.ListCourseIdByStuId(req.UserId)
+	d := dao.Lab.Where(dao.Lab.Columns.CourseId, courseIds)
+	// 找出这些课程所有的实验，按时间降序
+	if err = d.Order(dao.Lab.Columns.CreatedAt+" desc").Page(req.PageCurrent, req.PageSize).
+		FieldsEx(dao.Lab.Columns.DeletedAt).Scan(&records); err != nil {
+		return nil, err
+	}
+	count, err := d.Count()
+
+	// 查一下每一个实验是否完成
+	labSubmits := make([]*model.LabSubmit, 0)
+	if err = dao.LabSubmit.Where(dao.LabSubmit.Columns.UserId, req.UserId).
+		FieldsEx(dao.LabSubmit.Columns.DeletedAt).Scan(&labSubmits); err != nil {
+		return nil, err
+	}
+	for _, v := range records {
+		for _, v1 := range labSubmits {
+			if v.LabId == v1.LabId && v1.IsFinish == 1 {
+				v.IsFinish = true
+				break
+			}
+		}
+	}
+
+	resp = &response.PageResp{
+		Records: records,
+		PageInfo: &response.PageInfo{
+			Size:    len(records),
+			Total:   count,
+			Current: req.PageCurrent,
+			Pages:   int(math.Ceil(float64(count) / float64(req.PageSize))),
+		},
+	}
+	return resp, nil
 }

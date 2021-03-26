@@ -25,18 +25,15 @@ type LabCommentDao struct {
 
 // LabCommentColumns defines and stores column names for table lab_comment.
 type labCommentColumns struct {
-	LabCommentId  string // 主键
-	LabId         string // 实验id
-	CommentText   string // 评论内容，限120字
-	Pid           string // 父评论id，主评时为0
-	UserId        string // 发评论的用户id
-	Username      string // 被回复的用户名称
-	UserAvatarUrl string // 评论者头像
-	ReplyId       string // 被回复的用户id
-	ReplyUsername string // 被回复的用户名称
-	CreatedAt     string // 创建时间
-	UpdatedAt     string // 更新时间
-	DeletedAt     string // 删除时间
+	LabCommentId string // 主键
+	LabId        string // 实验id
+	CommentText  string // 评论内容，限120字
+	Pid          string // 父评论id，主评时为0
+	UserId       string // 发评论的用户id
+	ReplyUserId  string // 被回复的userId
+	CreatedAt    string // 创建时间
+	UpdatedAt    string // 更新时间
+	DeletedAt    string // 删除时间
 }
 
 var (
@@ -45,18 +42,15 @@ var (
 		M:     g.DB("default").Model("lab_comment").Safe(),
 		Table: "lab_comment",
 		Columns: labCommentColumns{
-			LabCommentId:  "lab_comment_id",
-			LabId:         "lab_id",
-			CommentText:   "comment_text",
-			Pid:           "pid",
-			UserId:        "user_id",
-			Username:      "username",
-			UserAvatarUrl: "user_avatar_url",
-			ReplyId:       "reply_id",
-			ReplyUsername: "reply_username",
-			CreatedAt:     "created_at",
-			UpdatedAt:     "updated_at",
-			DeletedAt:     "deleted_at",
+			LabCommentId: "lab_comment_id",
+			LabId:        "lab_id",
+			CommentText:  "comment_text",
+			Pid:          "pid",
+			UserId:       "user_id",
+			ReplyUserId:  "reply_user_id",
+			CreatedAt:    "created_at",
+			UpdatedAt:    "updated_at",
+			DeletedAt:    "deleted_at",
 		},
 	}
 )

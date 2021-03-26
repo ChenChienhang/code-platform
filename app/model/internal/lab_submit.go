@@ -10,15 +10,14 @@ import (
 
 // LabSubmit is the golang structure for table lab_submit.
 type LabSubmit struct {
-	LabSubmitId   int         `orm:"lab_submit_id,primary" json:"lab_submit_id"`   //
-	LabId         int         `orm:"lab_id"                json:"lab_id"`          // lab id
-	StuId         int         `orm:"stu_id"                json:"stu_id"`          // 用户id
-	StuRealName   string      `orm:"stu_real_name"         json:"stu_real_name"`   //
-	StuNum        string      `orm:"stu_num"               json:"stu_num"`         // 学号
-	ReportUrl     string      `orm:"report_url"            json:"report_url"`      // 存放实验报告pdf的url
-	TempReportUrl string      `orm:"temp_report_url"       json:"temp_report_url"` // 暂存实验报告url
-	IsFinish      int         `orm:"is_finish"             json:"is_finish"`       // 是否完成
-	CreatedAt     *gtime.Time `orm:"created_at"            json:"created_at"`      // 创建时间
-	UpdatedAt     *gtime.Time `orm:"updated_at"            json:"updated_at"`      // 更新时间
-	DeletedAt     *gtime.Time `orm:"deleted_at"            json:"deleted_at"`      // 删除时间
+	LabSubmitId int         `orm:"lab_submit_id,primary" json:"lab_submit_id"` //
+	LabId       int         `orm:"lab_id"                json:"lab_id"`        // lab id
+	UserId      int         `orm:"user_id"               json:"user_id"`       // 用户id
+	ReportUrl   string      `orm:"report_url"            json:"report_url"`    // 存放实验报告pdf的url
+	IsFinish    int         `orm:"is_finish"             json:"is_finish"`     // 是否完成
+	Score       int         `orm:"score"                 json:"score"`         // 分数
+	Comment     string      `orm:"comment"               json:"comment"`       // 评论
+	CreatedAt   *gtime.Time `orm:"created_at"            json:"created_at"`    // 创建时间
+	UpdatedAt   *gtime.Time `orm:"updated_at"            json:"updated_at"`    // 更新时间
+	DeletedAt   *gtime.Time `orm:"deleted_at"            json:"deleted_at"`    // 删除时间
 }

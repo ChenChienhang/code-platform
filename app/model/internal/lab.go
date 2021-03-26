@@ -13,7 +13,7 @@ type Lab struct {
 	LabId         int         `orm:"lab_id,primary" json:"lab_id"`         // 主键
 	CourseId      int         `orm:"course_id"      json:"course_id"`      // 该实验隶属的课程
 	Title         string      `orm:"title"          json:"title"`          // 标题
-	Description   string      `orm:"description"    json:"description"`    // 实验内容描述，无字数限制
+	Content       string      `orm:"content"        json:"content"`        // 实验内容描述，无字数限制
 	AttachmentUrl string      `orm:"attachment_url" json:"attachment_url"` // 实验附件url
 	DeadLine      *gtime.Time `orm:"dead_line"      json:"dead_line"`      // 截止时间
 	CreatedAt     *gtime.Time `orm:"created_at"     json:"created_at"`     // 创建时间

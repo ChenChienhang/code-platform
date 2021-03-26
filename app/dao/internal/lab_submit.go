@@ -25,17 +25,16 @@ type LabSubmitDao struct {
 
 // LabSubmitColumns defines and stores column names for table lab_submit.
 type labSubmitColumns struct {
-	LabSubmitId   string //
-	LabId         string // lab id
-	StuId         string // 用户id
-	StuRealName   string //
-	StuNum        string // 学号
-	ReportUrl     string // 存放实验报告pdf的url
-	TempReportUrl string // 暂存实验报告url
-	IsFinish      string // 是否完成
-	CreatedAt     string // 创建时间
-	UpdatedAt     string // 更新时间
-	DeletedAt     string // 删除时间
+	LabSubmitId string //
+	LabId       string // lab id
+	UserId      string // 用户id
+	ReportUrl   string // 存放实验报告pdf的url
+	IsFinish    string // 是否完成
+	Score       string // 分数
+	Comment     string // 评论
+	CreatedAt   string // 创建时间
+	UpdatedAt   string // 更新时间
+	DeletedAt   string // 删除时间
 }
 
 var (
@@ -44,17 +43,16 @@ var (
 		M:     g.DB("default").Model("lab_submit").Safe(),
 		Table: "lab_submit",
 		Columns: labSubmitColumns{
-			LabSubmitId:   "lab_submit_id",
-			LabId:         "lab_id",
-			StuId:         "stu_id",
-			StuRealName:   "stu_real_name",
-			StuNum:        "stu_num",
-			ReportUrl:     "report_url",
-			TempReportUrl: "temp_report_url",
-			IsFinish:      "is_finish",
-			CreatedAt:     "created_at",
-			UpdatedAt:     "updated_at",
-			DeletedAt:     "deleted_at",
+			LabSubmitId: "lab_submit_id",
+			LabId:       "lab_id",
+			UserId:      "user_id",
+			ReportUrl:   "report_url",
+			IsFinish:    "is_finish",
+			Score:       "score",
+			Comment:     "comment",
+			CreatedAt:   "created_at",
+			UpdatedAt:   "updated_at",
+			DeletedAt:   "deleted_at",
 		},
 	}
 )

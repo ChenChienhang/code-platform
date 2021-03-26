@@ -6,6 +6,7 @@ package model
 
 import (
 	"code-platform/app/model/internal"
+	"code-platform/library/common/response"
 	"github.com/gogf/gf/os/gtime"
 )
 
@@ -24,12 +25,13 @@ type SysUserResp struct {
 	Gender       *int        `orm:"gender"           json:"gender"`       // 性别
 	Major        *string     `orm:"major"            json:"major"`        // 专业，限15字
 	Organization *string     `orm:"organization"     json:"organization"` // 单位，例如计算机学院，限15字
+	Role         int         `json:"role"`                                // 角色
 	UpdatedAt    *gtime.Time `orm:"updated_at"       json:"updated_at"`   // 修改时间
 	CreatedAt    *gtime.Time `orm:"created_at"       json:"created_at"`   // 创建时间
 }
 
 // 注册请求注册参数
-type SignUpReq struct {
+type RegisterReq struct {
 	Email            string  // 邮箱
 	NickName         string  // 昵称
 	RealName         *string // 真实姓名
@@ -55,7 +57,6 @@ type UserUpdateReq struct {
 	RealName     *string // 真实姓名
 	Num          *string // 学号
 	AvatarUrl    *string // 头像url
-	OldPassword  *string // 旧密码
 	Password     *string // 新密码
 	Gender       *int    // 性别
 	Major        *string // 专业
@@ -74,4 +75,9 @@ type DeletedUserReq struct {
 	UserId           int    // 主键
 	Password         string // 密码
 	VerificationCode string // 验证码
+}
+
+type ListUserReq struct {
+	response.PageReq
+	RoleId int
 }

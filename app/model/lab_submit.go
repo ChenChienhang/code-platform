@@ -7,7 +7,6 @@ package model
 import (
 	"code-platform/app/model/internal"
 	"code-platform/library/common/response"
-	"github.com/gogf/gf/net/ghttp"
 	"github.com/gogf/gf/os/gtime"
 )
 
@@ -17,21 +16,21 @@ type LabSubmit internal.LabSubmit
 // Fill with you ideas below.
 
 type LabSummitResp struct {
-	LabSubmitId int         `orm:"lab_submit_id,primary" json:"lab_submit_id"` //
-	StuId       int         `orm:"stu_id"                json:"stu_id"`        // 用户id
-	StuRealName string      `orm:"stu_real_name"         json:"stu_real_name"` //
-	StuNum      string      `orm:"stu_num"               json:"stu_num"`       // 学号
-	ReportUrl   string      `orm:"report_url"            json:"report_url"`    // 存放实验报告pdf的url
-	IsFinish    bool        `orm:"is_finish"             json:"is_finish"`     // 是否完成代码
-	CodingTime  int         `json:"coding_time"`                               // 编码时间
-	CreatedTime *gtime.Time `orm:"created_time"          json:"created_time"`  // 创建时间
-	UpdatedTime *gtime.Time `orm:"updated_time"          json:"updated_time"`  // 更新时间
+	LabSubmitId int         `orm:"lab_submit_id,primary" json:"lab_submit_id"`  //
+	UserId      int         `orm:"user_id"                json:"stu_id"`        // 用户id
+	RealName    string      `orm:"real_name"              json:"stu_real_name"` //
+	Num         string      `orm:"num"                    json:"stu_num"`       // 学号
+	ReportUrl   string      `orm:"report_url"             json:"report_url"`    // 存放实验报告pdf的url
+	FinishStat  int         `orm:"finish_stat"            json:"finish_stat"`   // 是否完成代码
+	CodingTime  int         `json:"coding_time"`                                // 编码时间
+	CreatedTime *gtime.Time `orm:"created_time"           json:"created_time"`  // 创建时间
+	UpdatedTime *gtime.Time `orm:"updated_time"           json:"updated_time"`  // 更新时间
 }
 
 type SummitReportReq struct {
-	Report *ghttp.UploadFile
-	LabId  int
-	StuId  int
+	ReportUrl string
+	LabId     int
+	StuId     int
 }
 
 type SummitLabFinishReq struct {

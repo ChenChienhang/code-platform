@@ -16,42 +16,41 @@ var LabSummitController = new(labSummitController)
 
 type labSummitController struct{}
 
-func (c *labSummitController) InsertReport(r *ghttp.Request) {
+func (receiver *labSummitController) InsertReport(r *ghttp.Request) {
 	var req *model.SummitReportReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.StuId = r.GetVar(dao.SysUser.Columns.UserId).Int()
-	req.Report = r.GetUploadFile("report")
+	req.StuId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	if err := service.LabSummitService.InsertReport(req); err != nil {
 		response.Exit(r, err)
 	}
 }
 
-func (c *labSummitController) InsertCodeFinish(r *ghttp.Request) {
+func (receiver *labSummitController) InsertCodeFinish(r *ghttp.Request) {
 	var req *model.SummitLabFinishReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.StuId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.StuId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	if err := service.LabSummitService.InsertCodeFinish(req); err != nil {
 		response.Exit(r, err)
 	}
 }
 
-func (c *labSummitController) SelectLabSummit(r *ghttp.Request) {
+func (receiver *labSummitController) ListLabSummit(r *ghttp.Request) {
 	var req *model.SelectLabSummitReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	resp, err := service.LabSummitService.SelectLabSummit(req)
+	resp, err := service.LabSummitService.ListLabSummit(req)
 	if err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, resp)
 }
 
-func (c *labSummitController) SelectCompilerErrorLog(r *ghttp.Request) {
+func (receiver *labSummitController) SelectCompilerErrorLog(r *ghttp.Request) {
 	var req *model.SelectCompilerErrorLogReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)

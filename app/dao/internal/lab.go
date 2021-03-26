@@ -28,7 +28,7 @@ type labColumns struct {
 	LabId         string // 主键
 	CourseId      string // 该实验隶属的课程
 	Title         string // 标题
-	Description   string // 实验内容描述，无字数限制
+	Content       string // 实验内容描述，无字数限制
 	AttachmentUrl string // 实验附件url
 	DeadLine      string // 截止时间
 	CreatedAt     string // 创建时间
@@ -45,7 +45,7 @@ var (
 			LabId:         "lab_id",
 			CourseId:      "course_id",
 			Title:         "title",
-			Description:   "description",
+			Content:       "content",
 			AttachmentUrl: "attachment_url",
 			DeadLine:      "dead_line",
 			CreatedAt:     "created_at",

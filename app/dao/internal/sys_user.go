@@ -28,7 +28,6 @@ type sysUserColumns struct {
 	UserId       string // 主键
 	Email        string // 邮箱，限30字
 	Num          string // 学号/职工号，限20位
-	NickName     string // 昵称，限6字
 	RealName     string // 真实姓名，限6字
 	Password     string // 密码
 	AvatarUrl    string // 头像url
@@ -49,7 +48,6 @@ var (
 			UserId:       "user_id",
 			Email:        "email",
 			Num:          "num",
-			NickName:     "nick_name",
 			RealName:     "real_name",
 			Password:     "password",
 			AvatarUrl:    "avatar_url",
