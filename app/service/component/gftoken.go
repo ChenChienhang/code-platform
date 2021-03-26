@@ -23,15 +23,9 @@ import (
 var GfToken = newGfToken()
 
 func newGfToken() *gtoken.GfToken {
-	initRbac()
-	var cacheMode int8
-	if g.Cfg().GetBool("server.Multiple") {
-		cacheMode = 2
-	} else {
-		cacheMode = 1
-	}
+	//initRbac()
 	return &gtoken.GfToken{
-		CacheMode:       cacheMode,
+		CacheMode:       2,
 		LoginPath:       "/login",
 		LogoutPath:      "/logout",
 		LoginBeforeFunc: LoginBeforeFunc,
@@ -41,7 +35,7 @@ func newGfToken() *gtoken.GfToken {
 		AuthExcludePaths: g.SliceStr{
 			"/web/user/nickname",
 			"/web/user/signup",
-			"/web/user/email/*",
+			"/web/user/email",
 			"/web/user/password",
 			"/web/user/verificationCode",
 			"/web/user/test/*",
@@ -175,20 +169,14 @@ func LoginAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 	if !respData.Success() {
 		response.Exit(r, code.LoginError)
 	} else {
+		role, err := dao.SysUser.GetRoleById(respData.GetInt("userKey"))
+		if err != nil {
+			response.Exit(r, err)
+		}
 		// 返回token
-		avatarUrl, err := dao.SysUser.WherePri(respData.GetInt("userKey")).FindValue(dao.SysUser.Columns.AvatarUrl)
-		if err != nil {
-			response.Exit(r, err)
-		}
-		role, err := dao.SysUser.GetRole(respData.GetInt("userKey"))
-		if err != nil {
-			response.Exit(r, err)
-		}
 		response.Succ(r, g.Map{
-			"user_id":    respData.GetInt("userKey"),
-			"role":       role,
-			"token":      respData.GetString("token"),
-			"avatar_url": avatarUrl,
+			"role":  role,
+			"token": respData.GetString("token"),
 		})
 	}
 }
@@ -196,11 +184,11 @@ func LoginAfterFunc(r *ghttp.Request, respData gtoken.Resp) {
 func initRbac() {
 	file, err := excelize.OpenFile("./config/rbac.xlsx")
 	if err != nil {
-		return
+		println(err)
 	}
 	rows, err := file.Rows("front_api")
 	if err != nil {
-		return
+		println(err)
 	}
 	type api struct {
 		ApiId       int
@@ -212,7 +200,7 @@ func initRbac() {
 	for rows.Next() {
 		row, err := rows.Columns()
 		if err != nil {
-			return
+			println(err)
 		}
 		apis = append(apis, api{
 			ApiId:       gconv.Int(row[0]),
@@ -222,11 +210,11 @@ func initRbac() {
 		})
 	}
 	if _, err = g.Table("sys_api").Data(apis).Batch(len(apis)).Save(); err != nil {
-		return
+		println(err)
 	}
 	rows, err = file.Rows("role_api")
 	if err != nil {
-		return
+		println(err)
 	}
 	type roleApi struct {
 		ApiRoleId int
@@ -237,7 +225,7 @@ func initRbac() {
 	for rows.Next() {
 		row, err := rows.Columns()
 		if err != nil {
-			return
+			println(err)
 		}
 		roleApis = append(roleApis, roleApi{
 			ApiRoleId: gconv.Int(row[0]),
@@ -246,6 +234,6 @@ func initRbac() {
 		})
 	}
 	if _, err = g.Table("sys_api_role").Data(roleApis).Batch(len(roleApis)).Save(); err != nil {
-		return
+		println(err)
 	}
 }

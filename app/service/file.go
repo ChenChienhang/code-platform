@@ -38,7 +38,6 @@ type fileService struct {
 }
 
 func newFileService() (f *fileService) {
-
 	endpoint := g.Cfg().GetString("minio.endpoint")
 	accessKeyID := g.Cfg().GetString("minio.accessKeyID")
 	secretAccessKey := g.Cfg().GetString("minio.secretAccessKey")
@@ -199,7 +198,7 @@ func (s *fileService) UploadPdf(uploadFile *ghttp.UploadFile) (url string, err e
 // @return url
 // @return err
 // @date 2021-02-18 22:43:25
-func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url string, err error) {
+func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (uuid string, url string, err error) {
 	// 文件类型检查
 	var contentType string
 	switch gfile.ExtName(uploadFile.Filename) {
@@ -210,16 +209,16 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 	case "jpg":
 		contentType = "image/jpeg"
 	default:
-		return "", code.UnSupportUploadError
+		return "", "", code.UnSupportUploadError
 	}
 	// 编码
 	file, err := uploadFile.Open()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	img, err := jpeg.Decode(file)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	// 文件名
 	imageUploadName := strings.ReplaceAll(guuid.New().String(), "-", "")
@@ -228,7 +227,7 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 	buff := new(bytes.Buffer)
 	// 装入缓存
 	if err = jpeg.Encode(buff, dstImage128, nil); err != nil {
-		return "", err
+		return "", "", err
 	}
 	// 上传
 	if _, err = s.minio.PutObject(
@@ -239,7 +238,7 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 		int64(buff.Len()),
 		minio.PutObjectOptions{ContentType: contentType},
 	); err != nil {
-		return "", err
+		return "", "", err
 	}
 	url = fmt.Sprintf("%s/%s/%s%s",
 		g.Cfg().GetString("minio.endpoint"),
@@ -248,7 +247,7 @@ func (s *fileService) UploadPic(uploadFile *ghttp.UploadFile, width int) (url st
 		gfile.Ext(uploadFile.Filename))
 	go s.AddDirtyFile(url)
 	// 返回可直接访问的url
-	return url, nil
+	return imageUploadName, url, nil
 }
 
 // UploadAttachment 上传附件
