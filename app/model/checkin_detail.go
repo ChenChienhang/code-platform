@@ -27,6 +27,12 @@ type StartCheckInReq struct {
 	Name      string
 }
 
+type CheckinForStudentReq struct {
+	SecretKey string
+	CourseId  int
+	StuId     int
+}
+
 type CheckinDetailResp struct {
 	StuId           int    `json:"stu_id"`            // 学生id
 	Num             int    `json:"num"`               // 学号

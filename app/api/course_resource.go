@@ -15,7 +15,7 @@ var CourseResourceController = new(courseResourceController)
 
 type courseResourceController struct{}
 
-func (c *courseResourceController) Insert(r *ghttp.Request) {
+func (receiver *courseResourceController) Insert(r *ghttp.Request) {
 	var req *model.InsertCourseRecourseReq
 	if err := service.CourseResourceService.Insert(req); err != nil {
 		response.Exit(r, err)
@@ -23,7 +23,7 @@ func (c *courseResourceController) Insert(r *ghttp.Request) {
 	response.Succ(r, true)
 }
 
-func (c *courseResourceController) Update(r *ghttp.Request) {
+func (receiver *courseResourceController) Update(r *ghttp.Request) {
 	var req *model.UpdateCourseRecourseReq
 	if err := service.CourseResourceService.Update(req); err != nil {
 		response.Exit(r, err)
@@ -31,7 +31,7 @@ func (c *courseResourceController) Update(r *ghttp.Request) {
 	response.Succ(r, true)
 }
 
-func (c *courseResourceController) List(r *ghttp.Request) {
+func (receiver *courseResourceController) List(r *ghttp.Request) {
 	var req *model.ListCourseResourceReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
@@ -43,7 +43,7 @@ func (c *courseResourceController) List(r *ghttp.Request) {
 	response.Succ(r, resp)
 }
 
-func (c *courseResourceController) GetOne(r *ghttp.Request) {
+func (receiver *courseResourceController) GetOne(r *ghttp.Request) {
 	courseRecourseId := r.GetInt("courseRecourseId")
 	resp, err := service.CourseResourceService.GetOne(courseRecourseId)
 	if err != nil {
@@ -52,9 +52,9 @@ func (c *courseResourceController) GetOne(r *ghttp.Request) {
 	response.Succ(r, resp)
 }
 
-func (c courseResourceController) Delete(r *ghttp.Request) {
+func (receiver courseResourceController) Delete(r *ghttp.Request) {
 	courseRecourseId := r.GetInt("courseRecourseId")
-	if err := service.CourseResourceService.Delete(r.GetVar(dao.SysUser.Columns.UserId).Int(), courseRecourseId); err != nil {
+	if err := service.CourseResourceService.Delete(r.GetCtxVar(dao.SysUser.Columns.UserId).Int(), courseRecourseId); err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, true)

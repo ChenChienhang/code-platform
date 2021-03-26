@@ -19,12 +19,12 @@ type courseController struct{}
 // @receiver c courseController
 // @params r
 // @date 2021-02-08 19:18:26
-func (c *courseController) GetCourse(r *ghttp.Request) {
+func (receiver *courseController) GetCourse(r *ghttp.Request) {
 	courseId := r.GetInt("courseId")
 	resp := new(model.CourseResp)
 	d := dao.Course.FieldsEx(dao.Course.Columns.DeletedAt).WherePri(courseId)
 	// 只有开设该课程的教师可以查出密钥
-	if resp.TeacherId != r.GetVar(dao.SysUser.Columns.UserId).Int() {
+	if resp.TeacherId != r.GetCtxVar(dao.SysUser.Columns.UserId).Int() {
 		d.FieldsEx(dao.Course.Columns.SecretKey)
 	}
 	if err := d.Scan(&resp); err != nil {
@@ -37,13 +37,14 @@ func (c *courseController) GetCourse(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 11:37:04
-func (c *courseController) Insert(r *ghttp.Request) {
+func (receiver *courseController) Insert(r *ghttp.Request) {
 	// 入参
 	var req *model.InsertCourseReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.TeacherId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.IsClose = 1
+	req.TeacherId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	// 保存
 	if err := service.CourseService.InsertCourse(req); err != nil {
 		response.Exit(r, err)
@@ -55,13 +56,13 @@ func (c *courseController) Insert(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 11:40:27
-func (c *courseController) Update(r *ghttp.Request) {
+func (receiver *courseController) Update(r *ghttp.Request) {
 	//入参
 	var req *model.UpdateCourseReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.TeacherId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.TeacherId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	//保存
 	if err := service.CourseService.Update(req); err != nil {
 		response.Exit(r, err)
@@ -69,17 +70,17 @@ func (c *courseController) Update(r *ghttp.Request) {
 	response.Succ(r, true)
 }
 
-// ListByTeacherId 根据教师id分页查询所开设课程
+// ListCourseByTeacherId 根据教师id分页查询所开设课程
 // @receiver c
 // @params r
 // @date 2021-01-14 13:36:47
-func (c *courseController) ListByTeacherId(r *ghttp.Request) {
+func (receiver *courseController) ListCourseByTeacherId(r *ghttp.Request) {
 	// 入参
 	var req *model.ListByTeacherIdReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.TeacherId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.TeacherId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	resp, err := service.CourseService.ListCourseByTeacherId(req)
 	if err != nil {
 		response.Exit(r, err)
@@ -91,13 +92,13 @@ func (c *courseController) ListByTeacherId(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 13:36:47
-func (c *courseController) ListCourseByStuId(r *ghttp.Request) {
+func (receiver *courseController) ListCourseByStuId(r *ghttp.Request) {
 	// 入参
 	var req *model.ListCourseByStuIdReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.StudentId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.StudentId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	resp, err := service.CourseService.ListCourseByStuId(req)
 	if err != nil {
 		response.Exit(r, err)
@@ -109,7 +110,7 @@ func (c *courseController) ListCourseByStuId(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 13:36:47
-func (c *courseController) ListStuByCourseId(r *ghttp.Request) {
+func (receiver *courseController) ListStuByCourseId(r *ghttp.Request) {
 	// 入参
 	var req *model.ListStuByCourseIdReq
 	if err := r.Parse(&req); err != nil {
@@ -126,13 +127,13 @@ func (c *courseController) ListStuByCourseId(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-20 22:58:49
-func (c *courseController) AttendCourse(r *ghttp.Request) {
+func (receiver *courseController) AttendCourse(r *ghttp.Request) {
 	// 入参
 	var req *model.AttendCourseReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.StudentId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.StudentId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	if err := service.CourseService.AttendCourse(req); err != nil {
 		response.Exit(r, err)
 	}
@@ -143,7 +144,7 @@ func (c *courseController) AttendCourse(r *ghttp.Request) {
 // @receiver c courseController
 // @params r
 // @date 2021-02-06 21:19:55
-func (c *courseController) DropCourse(r *ghttp.Request) {
+func (receiver *courseController) DropCourse(r *ghttp.Request) {
 	// 入参
 	var req *model.DropCourseReq
 	if err := r.Parse(&req); err != nil {
@@ -159,23 +160,35 @@ func (c *courseController) DropCourse(r *ghttp.Request) {
 // @receiver c labController
 // @params r
 // @date 2021-01-20 23:07:30
-func (c *courseController) Delete(r *ghttp.Request) {
+func (receiver *courseController) Delete(r *ghttp.Request) {
 	// 入参
 	courseId := r.GetInt("courseId")
-	teacherId := r.GetVar(dao.SysUser.Columns.UserId).Int()
-	if err := service.CourseService.Delete(teacherId, courseId); err != nil {
+	teacherId := r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
+	if err := service.CourseService.DeleteCourse(teacherId, courseId); err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, true)
 }
 
-func (c *courseController) SearchListByCourseName(r *ghttp.Request) {
+func (receiver *courseController) SearchListByCourseName(r *ghttp.Request) {
 	// 入参
 	var req *model.SearchListByCourseNameReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	resp, err := service.CourseService.SearchList(req)
+	resp, err := service.CourseService.SearchListCourse(req)
+	if err != nil {
+		response.Exit(r, err)
+	}
+	response.Succ(r, resp)
+}
+
+func (receiver *courseController) ListCodingTimeByCourseId(r *ghttp.Request) {
+	var req *model.ListCodingTimeByCourseIdReq
+	if err := r.Parse(&req); err != nil {
+		response.Exit(r, err)
+	}
+	resp, err := service.CourseService.ListCodingTimeByCourseId(req)
 	if err != nil {
 		response.Exit(r, err)
 	}

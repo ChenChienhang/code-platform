@@ -8,7 +8,10 @@ import (
 	"code-platform/app/model"
 	"code-platform/library/common/code"
 	"code-platform/library/common/response"
+	"github.com/gogf/gf/database/gdb"
+	"github.com/gogf/gf/text/gstr"
 	"math"
+	"time"
 )
 
 var CourseService = new(courseService)
@@ -24,19 +27,20 @@ type courseService struct{}
 // @return error
 // @date 2021-01-15 19:46:37
 func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (resp *response.PageResp, err error) {
-	// 按创建时间降序
-	d := dao.Course.
-		// 创建时间降序
-		Order(dao.Course.Columns.CreatedAt+" desc").
-		// 剔除不必要字段
-		FieldsEx(dao.LabComment.Columns.DeletedAt,
-			dao.Course.Columns.CourseDes,
-			dao.Course.Columns.TeacherName,
-			dao.Course.Columns.TeacherId).
-		Where(dao.Course.Columns.TeacherId, req.TeacherId)
 	records := make([]*model.CourseResp, 0)
-	if err = d.Page(req.PageCurrent, req.PageSize).Scan(&records); err != nil {
+	// 按创建时间降序
+	d := dao.Course.Where(dao.Course.Columns.TeacherId, req.TeacherId)
+	// 剔除不必要字段
+	if err = d.Order(dao.Course.Columns.CreatedAt+" desc").FieldsEx(dao.Course.Columns.SecretKey, dao.Course.Columns.DeletedAt).
+		Page(req.PageCurrent, req.PageSize).Scan(&records); err != nil {
 		return nil, err
+	}
+	if one, err := dao.SysUser.WherePri(req.TeacherId).FindValue(dao.SysUser.Columns.RealName); err != nil {
+		return nil, err
+	} else {
+		for _, v := range records {
+			v.TeacherName = one.String()
+		}
 	}
 
 	// 分页信息查询
@@ -44,7 +48,6 @@ func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (re
 	if err != nil {
 		return nil, err
 	}
-
 	// 分页信息整合
 	resp = &response.PageResp{
 		Records: records,
@@ -66,16 +69,38 @@ func (s *courseService) ListCourseByTeacherId(req *model.ListByTeacherIdReq) (re
 // @return error
 // @date 2021-01-15 19:46:37
 func (s *courseService) ListCourseByStuId(req *model.ListCourseByStuIdReq) (resp *response.PageResp, err error) {
-	courseIds, count, err := dao.Course.ListCourseIdByStuId(req.PageCurrent, req.PageSize, req.StudentId)
+	courseIds, err := dao.Course.ListCourseIdByStuId(req.StudentId)
 	if err != nil {
 		return nil, err
 	}
 	// 按创建时间降序
 	records := make([]*model.CourseResp, 0)
-	if err = dao.Course.Order(dao.Course.Columns.CreatedAt+" desc").
+	d := dao.Course.Where(dao.Course.Columns.CourseId, courseIds)
+	if err = d.Order(dao.Course.Columns.CreatedAt+" desc").
 		// 剔除不必要字段
 		FieldsEx(dao.Course.Columns.DeletedAt, dao.Course.Columns.CourseDes, dao.Course.Columns.SecretKey).
-		Where(dao.Course.Columns.CourseId, courseIds).Scan(&records); err != nil {
+		Scan(&records); err != nil {
+		return nil, err
+	}
+	// 装配字段
+	userDetail := make([]*model.SysUser, 0)
+	if err := dao.SysUser.WherePri(gdb.ListItemValuesUnique(records, gstr.CamelCase(dao.Course.Columns.TeacherId))).
+		Fields(dao.SysUser.Columns.UserId, dao.SysUser.Columns.RealName).
+		FindScan(&userDetail); err != nil {
+		return nil, err
+	} else {
+		for _, v := range records {
+			for _, v1 := range userDetail {
+				if v.TeacherId == v1.UserId {
+					v.TeacherName = v1.RealName
+					break
+				}
+			}
+		}
+	}
+
+	count, err := d.Count()
+	if err != nil {
 		return nil, err
 	}
 
@@ -140,19 +165,22 @@ func (s *courseService) AttendCourse(req *model.AttendCourseReq) (err error) {
 // @date 2021-02-06 23:16:34
 func (s *courseService) ListStuByCourseId(req *model.ListStuByCourseIdReq) (resp *response.PageResp, err error) {
 	// 查出所有修读该门课程的学生学号
-	userIds, count, err := dao.Course.ListUserIdByCourseId(req.PageCurrent, req.PageSize, req.CourseId)
+	userIds, err := dao.Course.ListUserIdByCourseId(req.CourseId)
 	if err != nil {
 		return nil, err
 	}
 
 	// 查出所有学生的具体信息
-	d := dao.SysUser.Order(dao.SysUser.Columns.Num).WherePri(userIds).
-		FieldsEx(dao.SysUser.Columns.Password, dao.SysUser.Columns.DeletedAt)
+	d := dao.SysUser.WherePri(userIds)
 	records := make([]*model.SysUserResp, 0)
-	if err := d.Scan(&records); err != nil {
+	if err = d.Order(dao.SysUser.Columns.Num).FieldsEx(dao.SysUser.Columns.Password, dao.SysUser.Columns.DeletedAt).
+		Scan(&records); err != nil {
 		return nil, err
 	}
-
+	count, err := d.Count()
+	if err != nil {
+		return nil, err
+	}
 	resp = &response.PageResp{
 		Records: records,
 		PageInfo: &response.PageInfo{
@@ -184,7 +212,7 @@ func (s *courseService) Update(req *model.UpdateCourseReq) (err error) {
 	}
 
 	// 保存
-	if _, err = dao.Course.WherePri(req.CourseId).OmitEmpty().Save(req); err != nil {
+	if _, err = dao.Course.WherePri(req.CourseId).OmitEmpty().Update(req); err != nil {
 		// 保存不成功则不删除旧的封面
 		removeFlag = false
 		return err
@@ -193,6 +221,11 @@ func (s *courseService) Update(req *model.UpdateCourseReq) (err error) {
 	return nil
 }
 
+// InsertCourse 插入课程评论
+// @receiver s
+// @params req
+// @return err
+// @date 2021-03-16 14:26:50
 func (s *courseService) InsertCourse(req *model.InsertCourseReq) (err error) {
 	// 获取教师名称
 	if teacherName, err := dao.SysUser.WherePri(req.TeacherId).FindValue(dao.SysUser.Columns.RealName); err != nil {
@@ -210,7 +243,13 @@ func (s *courseService) InsertCourse(req *model.InsertCourseReq) (err error) {
 	return nil
 }
 
-func (s *courseService) SearchList(req *model.SearchListByCourseNameReq) (resp *response.PageResp, err error) {
+// SearchListCourse 搜索课程
+// @receiver s
+// @params req
+// @return resp
+// @return err
+// @date 2021-03-16 14:27:00
+func (s *courseService) SearchListCourse(req *model.SearchListByCourseNameReq) (resp *response.PageResp, err error) {
 	// 模糊搜索
 	d := dao.Course.Where(dao.Course.Columns.CourseName+" like ?", "%"+req.CourseName+"%").
 		// 字段剔除
@@ -238,12 +277,73 @@ func (s *courseService) SearchList(req *model.SearchListByCourseNameReq) (resp *
 	return resp, nil
 }
 
-func (s *courseService) Delete(teacherId int, courseId int) (err error) {
+func (s *courseService) DeleteCourse(teacherId int, courseId int) (err error) {
 	// 删除课程信息,不递归删除课程下的资源
 	if _, err = dao.Course.WherePri(courseId).And(dao.Course.Columns.TeacherId, teacherId).Delete(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *courseService) ListCodingTimeByCourseId(req *model.ListCodingTimeByCourseIdReq) (resp *response.PageResp, err error) {
+	labId, err := dao.Lab.Where(dao.Lab.Columns.CourseId, req.CourseId).Cache(time.Hour).FindArray(dao.Lab.Columns.LabId)
+	if err != nil {
+		return nil, err
+	}
+	stuId, err := dao.Course.ListUserIdByCourseId(req.CourseId)
+	records := make([]*model.ListCodingTimeByCourseIdResp, 0)
+	d := dao.SysUser.WherePri(stuId)
+	if err = d.Order(dao.SysUser.Columns.Num).Page(req.PageCurrent, req.PageSize).Fields(
+		dao.SysUser.Columns.UserId,
+		dao.SysUser.Columns.Num,
+		dao.SysUser.Columns.RealName,
+	).FindScan(&records); err != nil {
+		return nil, err
+	}
+	count, err := d.Count()
+	if err != nil {
+		return nil, err
+	}
+
+	// 找出所有的编码时间
+	codingTime := make([]*model.CodingTime, 0)
+	if err = dao.CodingTime.Where(dao.CodingTime.Columns.LabId, labId).
+		FieldsEx(dao.CodingTime.Columns.DeletedAt).FindScan(&codingTime); err != nil {
+		return nil, err
+	}
+	// 把编码时间加到每一天上
+	for _, v := range records {
+		v.CodingTime = make([]*model.CodingTimeRecord, 0)
+		for _, v1 := range codingTime {
+			if v.UserId == v1.UserId {
+				addFlag := false
+				for _, v2 := range v.CodingTime {
+					// 列表中有，累加
+					if v2.Date == v1.CreatedAt.Format("Y-m-d") {
+						v2.Time += v1.Duration
+						addFlag = true
+					}
+				}
+				// 列表中没有，新增
+				if !addFlag {
+					v.CodingTime = append(v.CodingTime, &model.CodingTimeRecord{
+						Date: v1.CreatedAt.Format("Y-m-d"),
+						Time: v1.Duration,
+					})
+				}
+			}
+		}
+	}
+	// 分页信息整合
+	resp = &response.PageResp{
+		Records: records,
+		PageInfo: &response.PageInfo{
+			Size:    len(records),
+			Total:   count,
+			Current: req.PageCurrent,
+			Pages:   int(math.Ceil(float64(count) / float64(req.PageSize))),
+		}}
+	return resp, nil
 }
 
 //func (s *courseService) name(pageCurrent, pageSize, courseId int) error {

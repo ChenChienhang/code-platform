@@ -25,18 +25,17 @@ type CourseDao struct {
 
 // CourseColumns defines and stores column names for table course.
 type courseColumns struct {
-	CourseId    string // 主键
-	TeacherId   string // 教师id
-	TeacherName string // 教师真名
-	CourseName  string // 课程名称，限15字
-	CourseDes   string // 课程描述，限300字
-	PicUrl      string // 封面url
-	SecretKey   string // 加入课程的密码,6位
-	IsClose     string // 结课标志
-	CreatedAt   string // 创建时间
-	UpdatedAt   string // 修改时间
-	DeletedAt   string // 删除时间
-	Language    string // 语言类型枚举
+	CourseId   string // 主键
+	TeacherId  string // 教师id
+	CourseName string // 课程名称，限15字
+	CourseDes  string // 课程描述，限300字
+	PicUrl     string // 封面url
+	SecretKey  string // 加入课程的密码,6位
+	IsClose    string // 结课标志
+	CreatedAt  string // 创建时间
+	UpdatedAt  string // 修改时间
+	DeletedAt  string // 删除时间
+	Language   string // 语言类型枚举
 }
 
 var (
@@ -45,18 +44,17 @@ var (
 		M:     g.DB("default").Model("course").Safe(),
 		Table: "course",
 		Columns: courseColumns{
-			CourseId:    "course_id",
-			TeacherId:   "teacher_id",
-			TeacherName: "teacher_name",
-			CourseName:  "course_name",
-			CourseDes:   "course_des",
-			PicUrl:      "pic_url",
-			SecretKey:   "secret_key",
-			IsClose:     "is_close",
-			CreatedAt:   "created_at",
-			UpdatedAt:   "updated_at",
-			DeletedAt:   "deleted_at",
-			Language:    "language",
+			CourseId:   "course_id",
+			TeacherId:  "teacher_id",
+			CourseName: "course_name",
+			CourseDes:  "course_des",
+			PicUrl:     "pic_url",
+			SecretKey:  "secret_key",
+			IsClose:    "is_close",
+			CreatedAt:  "created_at",
+			UpdatedAt:  "updated_at",
+			DeletedAt:  "deleted_at",
+			Language:   "language",
 		},
 	}
 )

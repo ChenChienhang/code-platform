@@ -10,16 +10,15 @@ import (
 
 // Course is the golang structure for table course.
 type Course struct {
-	CourseId    int         `orm:"course_id,primary" json:"course_id"`    // 主键
-	TeacherId   int         `orm:"teacher_id"        json:"teacher_id"`   // 教师id
-	TeacherName string      `orm:"teacher_name"      json:"teacher_name"` // 教师真名
-	CourseName  string      `orm:"course_name"       json:"course_name"`  // 课程名称，限15字
-	CourseDes   string      `orm:"course_des"        json:"course_des"`   // 课程描述，限300字
-	PicUrl      string      `orm:"pic_url"           json:"pic_url"`      // 封面url
-	SecretKey   int         `orm:"secret_key"        json:"secret_key"`   // 加入课程的密码,6位
-	IsClose     int         `orm:"is_close"          json:"is_close"`     // 结课标志
-	CreatedAt   *gtime.Time `orm:"created_at"        json:"created_at"`   // 创建时间
-	UpdatedAt   *gtime.Time `orm:"updated_at"        json:"updated_at"`   // 修改时间
-	DeletedAt   *gtime.Time `orm:"deleted_at"        json:"deleted_at"`   // 删除时间
-	Language    int         `orm:"language"          json:"language"`     // 语言类型枚举
+	CourseId   int         `orm:"course_id,primary" json:"course_id"`   // 主键
+	TeacherId  int         `orm:"teacher_id"        json:"teacher_id"`  // 教师id
+	CourseName string      `orm:"course_name"       json:"course_name"` // 课程名称，限15字
+	CourseDes  string      `orm:"course_des"        json:"course_des"`  // 课程描述，限300字
+	PicUrl     string      `orm:"pic_url"           json:"pic_url"`     // 封面url
+	SecretKey  int         `orm:"secret_key"        json:"secret_key"`  // 加入课程的密码,6位
+	IsClose    int         `orm:"is_close"          json:"is_close"`    // 结课标志
+	CreatedAt  *gtime.Time `orm:"created_at"        json:"created_at"`  // 创建时间
+	UpdatedAt  *gtime.Time `orm:"updated_at"        json:"updated_at"`  // 修改时间
+	DeletedAt  *gtime.Time `orm:"deleted_at"        json:"deleted_at"`  // 删除时间
+	Language   int         `orm:"language"          json:"language"`    // 语言类型枚举
 }

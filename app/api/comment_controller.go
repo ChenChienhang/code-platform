@@ -19,11 +19,12 @@ type commentController struct{}
 // @receiver c
 // @params r
 // @date 2021-01-16 20:38:52
-func (c *commentController) InsertCourseComment(r *ghttp.Request) {
+func (receiver *commentController) InsertCourseComment(r *ghttp.Request) {
 	var req *model.InsertCourseCommentReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	if err := service.CourseCommentService.InsertCourseComment(req); err != nil {
 		response.Exit(r, err)
 	}
@@ -34,11 +35,12 @@ func (c *commentController) InsertCourseComment(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-16 20:38:52
-func (c *commentController) InsertLabComment(r *ghttp.Request) {
+func (receiver *commentController) InsertLabComment(r *ghttp.Request) {
 	var req *model.InsertLabCommentReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	if err := service.CourseCommentService.InsertLabComment(req); err != nil {
 		response.Exit(r, err)
 	}
@@ -49,7 +51,7 @@ func (c *commentController) InsertLabComment(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-30 21:43:14
-func (c *commentController) ListCourseComment(r *ghttp.Request) {
+func (receiver *commentController) ListCourseComment(r *ghttp.Request) {
 	var req *model.ListCourseCommentReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
@@ -65,7 +67,7 @@ func (c *commentController) ListCourseComment(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-30 21:43:14
-func (c *commentController) ListLabComment(r *ghttp.Request) {
+func (receiver *commentController) ListLabComment(r *ghttp.Request) {
 	var req *model.ListLabCommentReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
@@ -81,8 +83,8 @@ func (c *commentController) ListLabComment(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-16 00:42:58
-func (c *commentController) DeleteCourseComment(r *ghttp.Request) {
-	userId := r.GetVar(dao.SysUser.Columns.UserId).Int()
+func (receiver *commentController) DeleteCourseComment(r *ghttp.Request) {
+	userId := r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	commentId := r.GetInt("commentId")
 	if err := service.CourseCommentService.DeleteCourseComment(commentId, userId); err != nil {
 		response.Exit(r, err)
@@ -94,8 +96,8 @@ func (c *commentController) DeleteCourseComment(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-16 00:42:58
-func (c *commentController) DeleteLabComment(r *ghttp.Request) {
-	userId := r.GetVar(dao.SysUser.Columns.UserId).Int()
+func (receiver *commentController) DeleteLabComment(r *ghttp.Request) {
+	userId := r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	commentId := r.GetInt("commentId")
 	if err := service.CourseCommentService.DeleteLabComment(commentId, userId); err != nil {
 		response.Exit(r, err)

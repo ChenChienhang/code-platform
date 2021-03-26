@@ -37,7 +37,7 @@ func (s *courseResourceService) Update(req *model.UpdateCourseRecourseReq) (err 
 			}
 		}(&removeFlag)
 	}
-	if _, err = dao.CourseRecourse.Save(req); err != nil {
+	if _, err = dao.CourseRecourse.Update(req); err != nil {
 		removeFlag = false
 		return err
 	}
@@ -49,7 +49,7 @@ func (s *courseResourceService) List(req *model.ListCourseResourceReq) (resp *re
 		FieldsEx(dao.CourseRecourse.Columns.DeletedAt, dao.CourseRecourse.Columns.CourseId, dao.CourseRecourse.Columns.AttachmentUrl).
 		Order(dao.CourseRecourse.Columns.CreatedAt + " desc")
 	records := make([]*model.CourseRecourseResp, 0)
-	if err = d.Page(req.PageCurrent, req.PageSize).Scan(records); err != nil {
+	if err = d.Page(req.PageCurrent, req.PageSize).Scan(&records); err != nil {
 		return nil, err
 	}
 	count, err := d.Count()
@@ -90,7 +90,7 @@ func (s *courseResourceService) Delete(userId int, courseRecourseId int) (err er
 func (s *courseResourceService) GetOne(courseRecourseId int) (resp *model.CourseRecourseResp, err error) {
 	resp = new(model.CourseRecourseResp)
 	if err = dao.CourseRecourse.WherePri(courseRecourseId).
-		FieldsEx(dao.CourseRecourse.Columns.DeletedAt, dao.CourseRecourse.Columns.CourseId).Scan(resp); err != nil {
+		FieldsEx(dao.CourseRecourse.Columns.DeletedAt, dao.CourseRecourse.Columns.CourseId).Scan(&resp); err != nil {
 		return nil, err
 	}
 	return resp, nil

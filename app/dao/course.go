@@ -36,17 +36,13 @@ var (
 // @return []gdb.Value
 // @return error
 // @date 2021-02-06 23:03:03
-func (c *courseDao) ListCourseIdByStuId(pageCurrent, pageSize, courseId int) (all []gdb.Value, count int, err error) {
-	d := g.Table("re_course_user").Where("user_id", courseId)
-	all, err = d.Page(pageCurrent, pageSize).FindArray("course_id")
+func (c *courseDao) ListCourseIdByStuId(userId int) (courseIds []gdb.Value, err error) {
+	courseIds, err = g.Table("re_course_user").Where("user_id", userId).
+		FindArray("course_id")
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	count, err = d.Count()
-	if err != nil {
-		return nil, 0, err
-	}
-	return all, count, err
+	return courseIds, err
 }
 
 // ListUserIdByCourseId 根据课程id查询userId
@@ -57,17 +53,13 @@ func (c *courseDao) ListCourseIdByStuId(pageCurrent, pageSize, courseId int) (al
 // @return []gdb.Value
 // @return error
 // @date 2021-02-06 23:22:43
-func (c *courseDao) ListUserIdByCourseId(pageCurrent int, pageSize int, courseId int) (all []gdb.Value, count int, err error) {
+func (c *courseDao) ListUserIdByCourseId(courseId int) (userIds []gdb.Value, err error) {
 	d := g.Table("re_course_user").Where("course_id", courseId)
-	all, err = d.Page(pageCurrent, pageSize).Cache(time.Hour).FindArray("user_id")
+	userIds, err = d.Cache(time.Hour).FindArray("user_id")
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	count, err = d.Count()
-	if err != nil {
-		return nil, 0, err
-	}
-	return all, count, err
+	return userIds, err
 }
 
 // AttendCourse 插入选课记录

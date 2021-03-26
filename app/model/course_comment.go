@@ -21,10 +21,10 @@ type CourseCommentResp struct {
 	CommentText     string      `orm:"comment_text"              json:"comment_text"`      // 评论内容，限120字
 	Pid             int         `orm:"pid"                       json:"pid"`               // 父评论id，主评时为空
 	UserId          int         `orm:"user_id"                   json:"user_id"`           // 发评论的用户id
-	UserAvatarUrl   int         `orm:"user_id"                   json:"user_avatar_url"`   // 发评论的用户id
+	UserAvatarUrl   string      `orm:"user_avatar_url"           json:"user_avatar_url"`   // 发评论的用户id
 	Username        string      `orm:"username"                  json:"username"`          // 回复者的用户名
 	ReplyUsername   string      `orm:"reply_username"            json:"reply_username"`    // 被回复者的用户名
-	ReplyId         int         `orm:"reply_id"                  json:"reply_id"`          // 回复的评论id
+	ReplyUserId     int         `orm:"reply_user_id"             json:"reply_user_id"`     // 回复的userId
 	CreatedAt       *gtime.Time `orm:"created_at"                json:"created_at"`        // 创建时间
 	UpdatedAt       *gtime.Time `orm:"updated_at"                json:"updated_at"`        // 更新时间
 }
