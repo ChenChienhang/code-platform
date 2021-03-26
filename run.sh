@@ -1,0 +1,1 @@
+docker build -t main:latest . && docker stop main && docker rm main && docker run -d -p 8080:8080 --name=main main:latest
