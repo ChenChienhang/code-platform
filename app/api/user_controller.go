@@ -15,18 +15,27 @@ var SysUserController = new(sysUserController)
 
 type sysUserController struct{}
 
+func (s *sysUserController) GetUserInfoByToken(r *ghttp.Request) {
+	id := r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
+	resp, err := service.UserService.GetUserInfoByToken(id)
+	if err != nil {
+		response.Exit(r, err)
+	}
+	response.Succ(r, resp)
+}
+
 // StuSignUp 学生身份注册
 // @receiver c
 // @params r
 // @date 2021-01-14 00:06:43
-func (c *sysUserController) StuSignUp(r *ghttp.Request) {
+func (s *sysUserController) StuSignUp(r *ghttp.Request) {
 	//入参
-	var req *model.SignUpReq
+	var req *model.RegisterReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
 	// 服务层处理
-	if err := service.UserService.SignUpForStu(req); err != nil {
+	if err := service.UserService.RegisterStudents(req); err != nil {
 		response.Exit(r, err)
 	}
 	response.Succ(r, true)
@@ -36,11 +45,11 @@ func (c *sysUserController) StuSignUp(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 00:10:04
-func (c *sysUserController) GetOne(r *ghttp.Request) {
+func (s *sysUserController) GetOne(r *ghttp.Request) {
 	userId := r.GetInt("userId")
 	// 不传默认从token取
 	if userId == 0 {
-		userId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+		userId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	}
 	// 字段脱敏
 	resp := new(model.SysUserResp)
@@ -53,24 +62,11 @@ func (c *sysUserController) GetOne(r *ghttp.Request) {
 	response.Succ(r, resp)
 }
 
-// IsNicknameAccessible 昵称唯一性检查
-// @receiver c
-// @params r
-// @date 2021-01-14 00:07:22
-func (c *sysUserController) IsNicknameAccessible(r *ghttp.Request) {
-	nickName := r.GetString("nickname")
-	v, err := dao.SysUser.Where(dao.SysUser.Columns.NickName, nickName).FindValue(dao.SysUser.Columns.UserId)
-	if err != nil {
-		response.Exit(r, err)
-	}
-	response.Succ(r, v.IsEmpty())
-}
-
 // isEmailAccessible 邮箱唯一性检查
 // @receiver c
 // @params r
 // @date 2021-01-14 00:07:30
-func (c *sysUserController) IsEmailAccessible(r *ghttp.Request) {
+func (s *sysUserController) IsEmailAccessible(r *ghttp.Request) {
 	email := r.GetString("email")
 	v, err := dao.SysUser.Where(dao.SysUser.Columns.Email, email).FindValue(dao.SysUser.Columns.UserId)
 	if err != nil {
@@ -83,7 +79,7 @@ func (c *sysUserController) IsEmailAccessible(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 00:07:38
-func (c *sysUserController) SendVerificationCode(r *ghttp.Request) {
+func (s *sysUserController) SendVerificationCode(r *ghttp.Request) {
 	emailAddr := r.GetString("email")
 	if err := service.UserService.SendVerificationCode(emailAddr); err != nil {
 		response.Exit(r, err)
@@ -95,7 +91,7 @@ func (c *sysUserController) SendVerificationCode(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 00:32:33
-func (c *sysUserController) ResetPassword(r *ghttp.Request) {
+func (s *sysUserController) ResetPassword(r *ghttp.Request) {
 	var req *model.ResetPasswordReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
@@ -110,13 +106,12 @@ func (c *sysUserController) ResetPassword(r *ghttp.Request) {
 // UpdateById 修改信息
 // @params r
 // @date 2021-01-14 00:07:57
-func (c *sysUserController) UpdateById(r *ghttp.Request) {
+func (s *sysUserController) UpdateById(r *ghttp.Request) {
 	var req *model.UserUpdateReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.UserId = r.GetVar(dao.SysUser.Columns.UserId).Int()
-
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 	if err := service.UserService.Update(req); err != nil {
 		response.Exit(r, err)
 	}
@@ -127,12 +122,12 @@ func (c *sysUserController) UpdateById(r *ghttp.Request) {
 // @receiver c
 // @params r
 // @date 2021-01-14 11:36:06
-func (c *sysUserController) DeleteById(r *ghttp.Request) {
+func (s *sysUserController) DeleteById(r *ghttp.Request) {
 	var req *model.DeletedUserReq
 	if err := r.Parse(&req); err != nil {
 		response.Exit(r, err)
 	}
-	req.UserId = r.GetVar(dao.SysUser.Columns.UserId).Int()
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
 
 	if err := service.UserService.DeletedUser(req); err != nil {
 		response.Exit(r, err)
@@ -140,16 +135,22 @@ func (c *sysUserController) DeleteById(r *ghttp.Request) {
 	response.Succ(r, true)
 }
 
-// ListUser 分页查询所有用户
-// @receiver c
-// @params r
-// @date 2021-01-14 12:48:12
-func (c *sysUserController) ListUser(r *ghttp.Request) {
-	//current, size := response.GetPageReq(r)
-	//resp, err := service.UserService.ListUser(current, size)
-	//
-	//if err != nil {
-	//	response.Exit(r, err)
-	//}
-	//response.Succ(r, resp)
+func (receiver *courseController) ListCodingTimeByUserId(r *ghttp.Request) {
+	var req *model.ListCodingTimeByUserIdReq
+	if err := r.Parse(&req); err != nil {
+		response.Exit(r, err)
+	}
+	req.UserId = r.GetCtxVar(dao.SysUser.Columns.UserId).Int()
+	resp, err := service.UserService.ListCodingTimeByUserId(req)
+	if err != nil {
+		response.Exit(r, err)
+	}
+	response.Succ(r, resp)
 }
+
+//func (s *sysUserController) UploadAvatar(r *ghttp.Request) {
+//	avatar := r.GetUploadFile("avatar")
+//	if err := service.UserService.UploadAvatar(avatar); err != nil {
+//		response.Exit(r, err)
+//	}
+//}

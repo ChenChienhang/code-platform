@@ -8,10 +8,10 @@ import (
 	"code-platform/app/model"
 	"code-platform/library/common/code"
 	"code-platform/library/common/response"
+	"code-platform/library/common/role"
 	"code-platform/library/common/utils"
 	"fmt"
 	"github.com/gogf/gf/frame/g"
-	"github.com/gogf/gf/os/gcache"
 	"github.com/gogf/gf/os/gtime"
 	"github.com/gogf/gf/util/grand"
 	"golang.org/x/crypto/bcrypt"
@@ -19,30 +19,23 @@ import (
 	"time"
 )
 
-type role int
-
-const (
-	teacher role = 1 + iota
-	student
-)
-
 var UserService = newUserService()
 
 type userService struct {
-	IUserServiceCache
+	redisVerCodeHeader string
 }
 
 func newUserService() (s *userService) {
-	s = &userService{newIUserServiceCache()}
+	s = &userService{"code.platform:verification.code:"}
 	return s
 }
 
-// SignUpForStu 注册
+// RegisterStudents 注册
 // @receiver s
 // @params req
 // @return error
 // @date 2021-01-09 00:15:22
-func (s *userService) SignUpForStu(req *model.SignUpReq) (err error) {
+func (s *userService) RegisterStudents(req *model.RegisterReq) (err error) {
 	// 校验验证码
 	if err = s.checkVerificationCode(req.Email, req.VerificationCode); err != nil {
 		return err
@@ -64,20 +57,19 @@ func (s *userService) SignUpForStu(req *model.SignUpReq) (err error) {
 	stuId, _ := result.LastInsertId()
 	if _, err = g.Table("sys_user_role").Insert(g.Map{
 		"user_id": stuId,
-		"role_id": student,
+		"role_id": role.Student,
 	}); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// SignUpForStu 教师签发账户注册
+// RegisterStudents 教师签发账户注册
 // @receiver s
 // @params req
 // @return error
 // @date 2021-01-09 00:15:22
-func (s *userService) SignUpForTeacher(req *model.SignUpReq) error {
+func (s *userService) SignUpForTeacher(req *model.RegisterReq) error {
 	// 校验验证码,不用校验验证码
 
 	// 密码加密
@@ -91,16 +83,6 @@ func (s *userService) SignUpForTeacher(req *model.SignUpReq) error {
 	if _, err = dao.SysUser.OmitEmpty().Insert(req); err != nil {
 		return err
 	}
-	// 把id查出来
-	//if userId, err := dao.SysUser.
-	//	Where(dao.SysUser.Columns.Email, req.Email).
-	//	FindValue(dao.SysUser.Columns.UserId); err != nil {
-	//	return err
-	//} else {
-	//	if err = addGroupPolicy(teacher, userId.Int()); err != nil {
-	//		return err
-	//	}
-	//}
 	return nil
 }
 
@@ -110,34 +92,6 @@ func (s *userService) SignUpForTeacher(req *model.SignUpReq) error {
 // @return error
 // @date 2021-01-10 00:07:55
 func (s *userService) Update(req *model.UserUpdateReq) error {
-	// 如果修改了密码，需要进行密码校验
-	if req.Password != nil {
-		// 在数据库校验用户
-		password, err := dao.SysUser.WherePri(req.UserId).FindValue(dao.SysUser.Columns.Password)
-		if err != nil {
-			return err
-		}
-		if password == nil {
-			//不存在该用户
-			return code.UserNotExistError
-		}
-
-		//校验密码 密码错误
-		if err = bcrypt.CompareHashAndPassword(password.Bytes(), []byte(*req.OldPassword)); err != nil {
-			return code.PasswordError
-		}
-	}
-	// 修改了昵称，检查昵称唯一性
-	if req.NickName != nil {
-		v, err := dao.SysUser.Where(dao.SysUser.Columns.NickName, req.NickName).FindValue(dao.SysUser.Columns.UserId)
-		if err != nil {
-			return err
-		}
-		// 如果其他人已经使用了该昵称
-		if !v.IsEmpty() || v.Int() != req.UserId {
-			return code.NickNameError
-		}
-	}
 	// 修改了头像
 	removeFlag := false
 	if req.AvatarUrl != nil {
@@ -160,62 +114,49 @@ func (s *userService) Update(req *model.UserUpdateReq) error {
 		removeFlag = false
 		return err
 	} else {
-		if _, err = dao.SysUser.TX(tx).OmitEmpty().Save(req); err != nil {
-			return err
-		}
-		// 改了真名
-		if req.RealName != nil {
-			// 课程里的开课老师名字可能要改
-			if _, err = dao.Course.TX(tx).OmitEmpty().Data(dao.Course.Columns.TeacherName, req.RealName).
-				Where(dao.Course.Columns.TeacherId, req.UserId).Save(); err != nil {
-				return err
-			}
-			// 作业提交里的真名要改
-			if _, err = dao.LabSubmit.TX(tx).OmitEmpty().Data(dao.LabSubmit.Columns.StuRealName, req.RealName).
-				Where(dao.LabSubmit.Columns.StuId, req.UserId).Save(); err != nil {
-				return err
-			}
-		}
-		// 改了昵称
-		if req.NickName != nil {
-			// 评论里的名字要改
-			if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.Username, req.NickName).
-				Where(dao.CourseComment.Columns.UserId, req.UserId).Save(); err != nil {
-				return err
-			}
-			if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.ReplyUsername, req.NickName).
-				Where(dao.CourseComment.Columns.ReplyId, req.UserId).Save(); err != nil {
-				return err
-			}
-			if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.Username, req.NickName).
-				Where(dao.LabComment.Columns.UserId, req.UserId).Save(); err != nil {
-				return err
-			}
-			if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.ReplyUsername, req.NickName).
-				Where(dao.LabComment.Columns.ReplyId, req.UserId).Save(); err != nil {
-				return err
-			}
-		}
-		// 修改了头像
-		if req.AvatarUrl != nil {
-			// 评论里的名字要改
-			if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.UserAvatarUrl, req.AvatarUrl).
-				Where(dao.CourseComment.Columns.UserId, req.UserId).Save(); err != nil {
-				return err
-			}
-			if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.UserAvatarUrl, req.AvatarUrl).
-				Where(dao.LabComment.Columns.UserId, req.UserId).Save(); err != nil {
-				return err
-			}
-		}
-		// 修改了学号
-		if req.Num != nil {
-			// 作业提交里的学号要改
-			if _, err = dao.LabSubmit.TX(tx).OmitEmpty().Data(dao.LabSubmit.Columns.StuNum, req.Num).
-				Where(dao.LabSubmit.Columns.StuId, req.UserId).Save(); err != nil {
-				return err
-			}
-		}
+		//if _, err = dao.SysUser.TX(tx).OmitEmpty().WherePri(req.UserId).Update(req); err != nil {
+		//	return err
+		//}
+		//// 改了真名
+		//if req.RealName != nil {
+		//	// 课程里的开课老师名字可能要改
+		//	if _, err = dao.Course.TX(tx).OmitEmpty().Data(dao.Course.Columns.TeacherName, req.RealName).
+		//		Where(dao.Course.Columns.TeacherId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//}
+		//// 改了昵称
+		//if req.NickName != nil {
+		//	// 评论里的名字要改
+		//	if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.Username, req.NickName).
+		//		Where(dao.CourseComment.Columns.UserId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//	if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.ReplyUsername, req.NickName).
+		//		Where(dao.CourseComment.Columns.ReplyId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//	if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.Username, req.NickName).
+		//		Where(dao.LabComment.Columns.UserId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//	if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.ReplyUsername, req.NickName).
+		//		Where(dao.LabComment.Columns.ReplyId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//}
+		//// 修改了头像
+		//if req.AvatarUrl != nil {
+		//	// 评论里的名字要改
+		//	if _, err = dao.CourseComment.TX(tx).Data(dao.CourseComment.Columns.UserAvatarUrl, req.AvatarUrl).
+		//		Where(dao.CourseComment.Columns.UserId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//	if _, err = dao.LabComment.TX(tx).Data(dao.LabComment.Columns.UserAvatarUrl, req.AvatarUrl).
+		//		Where(dao.LabComment.Columns.UserId, req.UserId).Update(); err != nil {
+		//		return err
+		//	}
+		//}
 		// 提交
 		if err = tx.Commit(); err != nil {
 			removeFlag = false
@@ -236,7 +177,7 @@ func (s *userService) SendVerificationCode(emailAddr string) error {
 	verificationCode := grand.Digits(6)
 
 	// 存入redis，15分钟有效期
-	if err := s.IUserServiceCache.SetV(15*time.Minute, emailAddr, verificationCode); err != nil {
+	if err := s.SetVerCode(15*time.Minute, emailAddr, verificationCode); err != nil {
 		return err
 	}
 	// 准备邮件内容
@@ -302,7 +243,7 @@ func (s *userService) ResetPassword(req *model.ResetPasswordReq) error {
 
 	// 存入加密后的密码
 	if _, err = dao.SysUser.Where(dao.SysUser.Columns.Email, req.Email).
-		Save(dao.SysUser.Columns.Password, hashPassword); err != nil {
+		Update(dao.SysUser.Columns.Password, hashPassword); err != nil {
 		return err
 	}
 	return nil
@@ -315,7 +256,7 @@ func (s *userService) ResetPassword(req *model.ResetPasswordReq) error {
 // @return error
 // @date 2021-01-13 20:50:40
 func (s *userService) checkVerificationCode(email string, verificationCode string) error {
-	v, err := s.GetV(email)
+	v, err := s.GetVerCode(email)
 	if err != nil {
 		return nil
 	}
@@ -393,6 +334,17 @@ func (s *userService) ListUser(current, size int) (*response.PageResp, error) {
 	return resp, nil
 }
 
+func (s *userService) GetUserInfoByToken(id int) (resp *model.SysUserResp, err error) {
+	resp = &model.SysUserResp{}
+	if err = dao.SysUser.WherePri(id).FieldsEx(dao.SysUser.Columns.DeletedAt).Scan(&resp); err != nil {
+		return nil, err
+	}
+	if resp.Role, err = dao.SysUser.GetRoleById(id); err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
 //func (s *userService) ListStuPage(current, size int) (*model.SysUserPageResp, error) {
 //	d := dao.SysUser.Page(current, size).
 //		FieldsEx(dao.SysUser.Columns.Password, dao.LabComment.Columns.DeletedAt)
@@ -422,47 +374,23 @@ func (s *userService) ListUser(current, size int) (*response.PageResp, error) {
 //	return resp, nil
 //}
 
-type IUserServiceCache interface {
-	SetV(duration time.Duration, key string, value interface{}) (err error)
-	GetV(key string) (value interface{}, err error)
-}
-
-func newIUserServiceCache() (c IUserServiceCache) {
-	if g.Cfg().GetBool("server.Multiple") {
-		c = &userServiceRedisCache{
-			key: "code.platform:verification.code:",
-		}
-		return c
-	} else {
-		c = &userServiceSimpleCache{
-			gcache.New(),
-		}
-		return c
-	}
-}
-
-type userServiceRedisCache struct {
-	key string
-}
-
-func (u *userServiceRedisCache) SetV(duration time.Duration, key string, value interface{}) (err error) {
+func (s *userService) SetVerCode(duration time.Duration, key string, verCode string) (err error) {
 	r := g.Redis()
 	if duration == -1 {
-		if _, err = r.Do("SET", key, value); err != nil {
+		if _, err = r.Do("SET", s.redisVerCodeHeader+key, verCode); err != nil {
 			return err
 		}
 	} else {
-		if _, err = r.DoWithTimeout(duration, "SET", key, value); err != nil {
+		if _, err = r.DoWithTimeout(duration, "SET", key, verCode); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
-func (u *userServiceRedisCache) GetV(key string) (value interface{}, err error) {
+func (s *userService) GetVerCode(key string) (verCode string, err error) {
 	r := g.Redis()
-	v, err := r.DoVar("GET", key)
+	v, err := r.DoVar("GET", s.redisVerCodeHeader+key)
 	if err != nil {
 		return "", err
 	}
@@ -472,30 +400,68 @@ func (u *userServiceRedisCache) GetV(key string) (value interface{}, err error) 
 	return v.String(), nil
 }
 
-type userServiceSimpleCache struct {
-	*gcache.Cache
+func (s *userService) ListCodingTimeByUserId(req *model.ListCodingTimeByUserIdReq) (resp *model.ListCodingTimeByCourseIdResp, err error) {
+	resp = &model.ListCodingTimeByCourseIdResp{}
+	if err = dao.SysUser.WherePri(req.UserId).Fields(
+		dao.SysUser.Columns.UserId,
+		dao.SysUser.Columns.Num,
+		dao.SysUser.Columns.RealName,
+	).FindScan(&resp); err != nil {
+		return nil, err
+	}
+	resp.CodingTime = make([]*model.CodingTimeRecord, 0)
+
+	// 找出所有的编码时间
+	codingTime := make([]*model.CodingTime, 0)
+	if err = dao.CodingTime.Where(dao.CodingTime.Columns.UserId, req.UserId).
+		FieldsEx(dao.CodingTime.Columns.DeletedAt).FindScan(&codingTime); err != nil {
+		return nil, err
+	}
+
+	// 把编码时间加到每一天上
+	for _, v := range codingTime {
+		if resp.UserId == v.UserId {
+			addFlag := false
+			for _, v1 := range resp.CodingTime {
+				// 列表中有，累加
+				if v1.Date == v.CreatedAt.Format("Y-m-d") {
+					v1.Time += v.Duration
+					addFlag = true
+				}
+			}
+			// 列表中没有，新增
+			if !addFlag {
+				resp.CodingTime = append(resp.CodingTime, &model.CodingTimeRecord{
+					Date: v.CreatedAt.Format("Y-m-d"),
+					Time: v.Duration,
+				})
+			}
+		}
+	}
+	return resp, nil
 }
 
-func (u *userServiceSimpleCache) SetV(duration time.Duration, key string, value interface{}) (err error) {
-	if duration == -1 {
-		if err = u.Set(0, value, duration); err != nil {
-			return err
-		}
-	} else {
-		if err = u.Set(key, value, duration); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (u *userServiceSimpleCache) GetV(key string) (value interface{}, err error) {
-	v, err := u.GetVar(key)
-	if err != nil {
-		return "", err
-	}
-	if v.IsNil() {
-		return "", nil
-	}
-	return v.String(), nil
-}
+//func (s *userService) UploadAvatar(avatar *ghttp.UploadFile,userId int) (err error) {
+//	uuid, url, err := FileService.UploadPic(avatar, 128)
+//	if err != nil {
+//		return err
+//	}
+//	if _, err = dao.MinioFile.Insert(g.Map{
+//		dao.MinioFile.Columns.Url:      url,
+//		dao.MinioFile.Columns.Filename: avatar.Filename,
+//		dao.MinioFile.Columns.Uuid:     uuid,
+//	}); err != nil {
+//		return err
+//	}
+//	oldAvatar,err := dao.SysUser.WherePri(userId).FindValue(dao.SysUser.Columns.AvatarUrl)
+//	if err != nil {
+//		return err
+//	}
+//	removeFlag :=
+//	if oldAvatar != nil{
+//		go func() {
+//
+//		}()
+//	}
+//	return nil
+//}
