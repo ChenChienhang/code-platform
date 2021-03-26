@@ -8,16 +8,16 @@ import (
 	"code-platform/app/model"
 	"code-platform/library/common/response"
 	"github.com/gogf/gf/frame/g"
-	"github.com/gogf/gf/os/gtime"
 	"time"
 )
 
 type iTheiaService interface {
-	GetOrRunIDE(req *model.GetIDEUrlReq) (url string, err error)
-	clearTimeOutIDE()
-	shutDownIDE(userId int, languageEnum int, labId int) (err error)
-	CloseIDE(req *model.CloseIDEReq) (err error)
+	OpenIDE(req *model.OpenIDEReq) (url string, err error)
+	ClearIDE()
+	StopIDE(req *model.CloseIDEReq) (err error)
 	CollectCompilerErrorLog(req *model.SelectCompilerErrorLogReq) (resp *response.PageResp, err error)
+	CheckCode(req *model.CheckCodeReq) (url string, err error)
+	ListContianer()
 }
 
 var TheiaService = newTheiaService()
@@ -30,11 +30,11 @@ func newTheiaService() (t iTheiaService) {
 		// 用docker
 		t = newDockerTheiaService()
 	}
-	// 每10分钟清理一次容器
+	// 每3分钟清理一次容器
 	go func() {
 		for {
-			time.Sleep(10 * time.Minute)
-			t.clearTimeOutIDE()
+			time.Sleep(3 * time.Minute)
+			t.ClearIDE()
 		}
 	}()
 	return t
@@ -70,28 +70,57 @@ func getLanguageString(languageEnum int) string {
 	return languageType
 }
 
-func getLanguageStringByLabId(labId int) (languageString string, err error) {
+func getLanguageEnumByLabId(labId int) (languageEnum int, err error) {
 	// 查出所用语言
-	var languageEnum int
 	if labId != 0 {
 		courseId, err := dao.Lab.Cache(time.Hour).WherePri(labId).FindValue(dao.Lab.Columns.CourseId)
 		if err != nil {
-			return "", err
+			return 0, err
 		}
 		languageEnumV, err := dao.Course.Cache(time.Hour).WherePri(courseId.Int()).FindValue(dao.Course.Columns.Language)
 		if err != nil {
-			return "", err
+			return 0, err
 		}
 		languageEnum = languageEnumV.Int()
 	} else {
+		// 自由区
 		languageEnum = 0
 	}
-	languageString = getLanguageString(languageEnum)
-	return languageString, nil
+	return languageEnum, nil
 }
 
-type theiaState struct {
-	Url       string
-	StartTime *gtime.Time
-	EndTime   *gtime.Time
+// 获取容器名
+func getImageName(languageEnum int) (imageName string) {
+	switch languageEnum {
+	case 0:
+		imageName = g.Cfg().GetString("theia.docker.image.full")
+	case 1:
+		imageName = g.Cfg().GetString("theia.docker.image.cpp")
+	case 2:
+		imageName = g.Cfg().GetString("theia.docker.image.java")
+	case 3:
+		imageName = g.Cfg().GetString("theia.docker.image.python")
+	}
+	return imageName
+}
+
+func getEnvironmentMount(languageEnum int) (environmentMount string) {
+	switch languageEnum {
+	case 0:
+		//full
+		environmentMount = "/home/theia/.theia"
+	case 1:
+		//cpp
+		environmentMount = "/root/.theia"
+	case 2:
+		//java
+		environmentMount = "/root/.theia"
+	case 3:
+		//python
+		environmentMount = "/home/theia/.theia"
+	case 4:
+		//web
+		environmentMount = "/root/.theia"
+	}
+	return environmentMount
 }
